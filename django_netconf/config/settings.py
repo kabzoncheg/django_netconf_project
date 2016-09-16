@@ -12,6 +12,17 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
+
+def get_env_variable(var_name):
+    """Get the environment variable or return exception"""
+    try:
+        return os.environ[var_name]
+    except KeyError:
+        error_msg = "Set the {} environment variable".format(var_name)
+        raise ImproperlyConfigured
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,7 +31,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'gc@yef6#78!1#@3#anz1$yh0elxy0mz_du0%528sdp0uqq+5xp'
+SECRET_KEY = get_env_variable('DJANGO_SEC')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -77,8 +88,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'django_netconf',
-        'USER': os.environ['DB_USR'],
-        'PASSWORD': os.environ['DB_PWD'],
+        'USER': get_env_variable('BD_USR'),
+        'PASSWORD': get_env_variable('BD_PWD'),
         'HOST': 'localhost',
         'PORT': '',
     }

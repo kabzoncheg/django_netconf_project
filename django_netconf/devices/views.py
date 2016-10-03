@@ -13,4 +13,4 @@ class DeviceListView(generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Device.objects.order_by('')
+        return Device.objects.order_by('ip_address')

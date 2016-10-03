@@ -24,9 +24,11 @@ class Device (models.Model):
     software_version = models.CharField('Device software version:', max_length=50, blank=True, editable=False)
     serial_number = models.CharField('Device S/N:', max_length=50, blank=True, editable=False)
     up_time = models.CharField('Device ucptime:', max_length=50, blank=True, editable=False)
-    last_checked_time = models.DateTimeField('Device last checked time:', editable=False)
+    last_checked_time = models.DateTimeField('Device last checked time:', auto_now=True, editable=False)
     last_checked_status = models.CharField('Device last checked status (UP/DOWN):', max_length=4, editable=False)
 
+    class Meta:
+        app_label = 'devices'
 
 def device_config_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/configs/device_<id>/filename

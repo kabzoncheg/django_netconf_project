@@ -27,8 +27,6 @@ class Device (models.Model):
     last_checked_time = models.DateTimeField('Device last checked time:', auto_now=True, editable=False)
     last_checked_status = models.CharField('Device last checked status (UP/DOWN):', max_length=4, editable=False)
 
-    class Meta:
-        app_label = 'devices'
 
 def device_config_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/configs/device_<id>/filename

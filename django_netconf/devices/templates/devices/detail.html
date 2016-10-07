@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+{% block content %}
+    <div class="post">
+        <h1>{{ post.title }}</h1>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+        <p>{{ post.text|safe }}</p>
+    </div>
+    <br>
+    <h2>Comments:</h2>
+    <br>
+    {% for comment in comment_list %}
+        <div class="well">
+            <div class="post">
+                <p style="color:#2EC745; font-family:'Nova Mono' "><strong>{{ comment.user_who_created }}</strong>, wrote at {{ comment.pub_date }}:</p>
+                <br>
+                <p>{{ comment.text|safe }}</p>
+            </div>
+            <br>
+
+            {%if comment.user_who_created == user%}
+                <table width="100%" cellspacing="0" cellpadding="5">
+                    <tr>
+                         <td width="200" valign="top">
+                             <form method="POST" action="{% url 'blogtopic:delete_comment' comment.pk %}">
+                                {% csrf_token %}
+                                <input type="submit" value="Delete comment" class="btn btn-danger btn-sm">
+                             </form>
+                         </td>
+                         <td valign="top">
+                             <form method="GET" action="{% url 'blogtopic:edit_comment' comment.pk %}">
+                                 {% csrf_token %}
+                                 <input type="submit" value="Edit comment" class="btn btn-warning btn-sm">
+                             </form>
+                         </td>
+                    </tr>
+                </table>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+        <br>
+        <br>
+        <br>
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.media }}
+            {{ form.as_p}}
+            <input type="submit" value="Send comment" class="btn btn-success btn-lg"/>
+        </form>
+    {% else %}
+        <p><strong>To leave a comment you must <a href="{% url 'django.contrib.auth.views.login' %}">[login]</a></strong></p>
+    {% endif %}
+
+    <br>
+    <br>
+    <br>
+    <table width="90%" cellspacing="0" cellpadding="5" align="right">
+        <tr>
+            {% if post.get_next_post_slug != None %}
+                 <td valign="top">Next Post: <a href="{% url 'blogtopic:detail' post.get_next_post_slug %}">{{ post.get_next_post_title }}</a></td>
+            {% else %}
+            {% endif %}
+            {% if post.get_previous_post_slug != None %}
+                <td width="200" valign="top">Previous Post: <a href="{% url 'blogtopic:detail' post.get_previous_post_slug %}">{{ post.get_previous_post_title }}</a></td>
+            {% else %}
+            {% endif %}
+        </tr>
+    </table>
+{% endblock %}
+</html>
+

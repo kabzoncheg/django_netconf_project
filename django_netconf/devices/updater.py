@@ -5,10 +5,10 @@ from time import time
 from queue import Queue
 from threading import Thread
 
-import django
+from django import setup as django_setup
 from django.core.management import settings
 from django.core.exceptions import ObjectDoesNotExist
-from jnpr.junos import Device
+from jnpr.junos import Device as device_connector
 
 # In case this module run outside of django
 if not settings.configured:
@@ -16,7 +16,7 @@ if not settings.configured:
     project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.append(project_path)
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_netconf.config.settings')
-    django.setup()
+    django_setup()
 
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -43,10 +43,10 @@ def update_model_device(device_ip, facts={}):
     # HERE is relative import issue, beware!
     # Doesn't work from django_netconf.devices.models import Device.
     # Possibly it is a django bug
-    from devices.models import Device as mDevice
+    from devices.models import Device
 
     try:
-        device_object = mDevice.objects.get(ip_address=device_ip)
+        device_object = Device.objects.get(ip_address=device_ip)
     except ObjectDoesNotExist:
         logger.error('There is no device with IP {} in database!'.format(device_ip))
     else:
@@ -55,7 +55,7 @@ def update_model_device(device_ip, facts={}):
         if facts == {}:
             device_object.last_checked_status = 'DOWN'
             device_object.save()
-            logger.info('device changed state to DOWN'.format(device_ip))
+            logger.info('device {} changed state to DOWN'.format(device_ip))
             return
         if device_object.name != facts['hostname']:
             device_object.name = facts['hostname']
@@ -71,7 +71,7 @@ def update_model_device(device_ip, facts={}):
             device_object.up_time = facts['RE0']['up_time']
         device_object.last_checked_status = 'UP'
         device_object.save()
-        logger.info('fineshed updating model {}'.format(mDevice))
+        logger.info('fineshed updating model {}'.format(Device))
 
 
 class DeviceThreadWorker(Thread):
@@ -89,14 +89,13 @@ class DeviceThreadWorker(Thread):
             _host, _tables_to_update = self._thread_queue.get()
             _user = get_env_variable('JNPR_USR')
             _password = get_env_variable('JNPR_PWD')
-            _dev = Device(host=_host, user=_user, passwd=_password)
+            _dev = device_connector(host=_host, user=_user, passwd=_password)
 
             try:
                 _dev.open()
             except Exception as _err:
                 logger.error('Cannot connet to device {}, error occured: {}'.format(_host, _err))
                 update_model_device(_host, facts={})
-                _dev.close()
 
                 # Necessary Models update operations performed here
             else:
@@ -140,5 +139,5 @@ def device_updater(host_list, tables_to_update=()):
     print('Took {}'.format(time() - ts))
 
 if __name__ == '__main__':
-    hosts = ['10.0.1.2']
+    hosts = ['10.0.1.1', '10.0.1.2']
     device_updater(hosts)

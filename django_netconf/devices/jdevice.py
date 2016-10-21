@@ -16,7 +16,8 @@ class JunosDevice:
 
     @property
     def arp_table(self):
-        """A list of ARP entries.
+        """
+        A list of ARP entries.
 
         :returns: ARP entries
         :rtype: list
@@ -28,10 +29,27 @@ class JunosDevice:
                 continue
             entry = dict(ip_address=old_entry.findtext('ip-address').strip(),
                          interface=old_entry.findtext('interface-name').strip(),
-                         hostname=self.hostname.strip(),
-                         vpn=self.vpn,
+                         hostname=self.hostname.strip(), vpn=self.vpn,
                          mac_address=old_entry.findtext('mac-address').strip())
             table.append(entry)
+        return table
+
+    @property
+    def route_table(self):
+        """
+        A list of routes bound to current route-tables
+
+        :return: list
+        """
+        table = []
+        root = self._connection.rpc.get_route_information(all=True)
+        for route_table in root:
+            table_name = route_table.findtext('table-name')
+            route_list = route_table.findall('rt')
+            for route in route_list:
+                entry = dict((attr.tag, attr.text) for attr in route.iter() if not len(attr) and attr.text is not None)
+                entry['table_name'] = table_name
+                table.append(entry)
         return table
 
     def __init__(self, *args, **kwargs):
@@ -57,8 +75,10 @@ class JunosDevice:
             self._connection.close()
 
 if __name__ == '__main__':
-    rt = JunosDevice(host='10.0.1.1', user='django', password='Password12!')
-    rt.connect()
-    at = rt.arp_table
-    print('ARP TABLE', at)
-    rt.disconnect()
+    dev = JunosDevice(host='10.0.1.1', user='django', password='Password12!')
+    dev.connect()
+    at = dev.arp_table
+    rt = dev.route_table
+    print('ROUTE TABLE', rt)
+    #print('ARP TABLE', at)
+    dev.disconnect()

@@ -45,12 +45,57 @@ class JunosDevice:
         root = self._connection.rpc.get_route_information(all=True)
         for route_table in root:
             table_name = route_table.findtext('table-name')
-            route_list = route_table.findall('rt')
-            for route in route_list:
-                entry = dict((attr.tag, attr.text) for attr in route.iter() if not len(attr) and attr.text is not None)
+            for route in route_table.findall('rt'):
+                entry = dict((elt.tag, elt.text) for elt in route.iter() if not len(elt) and elt.text is not None)
                 entry['table_name'] = table_name
                 table.append(entry)
         return table
+
+    @property
+    def interface_list(self):
+        """
+        A list of interfaces with thier parameters
+
+        :return: list
+        """
+        table = []
+        root = self._connection.rpc.get_interface_information()
+        for phy_int in root:
+            entry = dict(
+                (elt.tag, elt.text.strip()) for elt in phy_int.iter() if not len(elt) and elt.text is not None)
+            entry['int-type'] = 'physical-interface'
+            table.append(entry)
+            for log_int in phy_int.findall('logical-interface'):
+                entry = dict(
+                    (elt.tag, elt.text.strip()) for elt in log_int.iter() if not len(elt) and elt.text is not None)
+                entry['int-type'] = 'logical-interface'
+                table.append(entry)
+        return table
+
+    @property
+    def route_instance_list(self):
+        """
+        A list of routing instances with parameters
+
+        :return: list
+        """
+        table = []
+        root = self._connection.rpc.get_instance_information(detail=True)
+        for route_inst in root:
+            entry = {}
+            for elt in route_inst.findall('*'):
+                if not len(elt):
+                    entry[elt.tag] = elt.text
+                if elt.tag == 'instance-interface':
+                    entry['instance-interface_list'] = list(int_elt.text for int_elt in elt)
+                if elt.tag == 'instance-rib':
+                    entry['instance-rib_list'] = list(rib_elt.text for rib_elt in elt if rib_elt.tag == 'irib-name')
+            table.append(entry)
+        return table
+
+    @property
+    def facts(self):
+        return self._facts
 
     def __init__(self, *args, **kwargs):
         self.hostname = args[0] if len(args) else kwargs.get('host')
@@ -68,6 +113,7 @@ class JunosDevice:
         dev.open()
         dev.timeout = self.timeout
         self._connection = dev
+        self._facts = dev.facts
         return self
 
     def disconnect(self):
@@ -75,10 +121,15 @@ class JunosDevice:
             self._connection.close()
 
 if __name__ == '__main__':
-    dev = JunosDevice(host='10.0.1.1', user='django', password='Password12!')
-    dev.connect()
-    at = dev.arp_table
-    rt = dev.route_table
-    print('ROUTE TABLE', rt)
-    #print('ARP TABLE', at)
-    dev.disconnect()
+    device = JunosDevice(host='10.0.1.1', user='django', password='Password12!')
+    device.connect()
+    at = device.arp_table
+    rt = device.route_table
+    il = device.interface_list
+    ril = device.route_instance_list
+    # print(device.facts)
+    # print('ROUTE INSTANCE LIST:', ril)
+    # print('INTERFACE LIST:', il)
+    # print('ROUTE TABLE', rt)
+    # print('ARP TABLE', at)
+    device.disconnect()

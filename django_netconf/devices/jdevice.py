@@ -119,17 +119,3 @@ class JunosDevice:
     def disconnect(self):
         if self._connection:
             self._connection.close()
-
-if __name__ == '__main__':
-    device = JunosDevice(host='10.0.1.1', user='django', password='Password12!')
-    device.connect()
-    at = device.arp_table
-    rt = device.route_table
-    il = device.interface_list
-    ril = device.route_instance_list
-    # print(device.facts)
-    # print('ROUTE INSTANCE LIST:', ril)
-    # print('INTERFACE LIST:', il)
-    # print('ROUTE TABLE', rt)
-    # print('ARP TABLE', at)
-    device.disconnect()

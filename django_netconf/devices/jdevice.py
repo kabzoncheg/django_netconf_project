@@ -15,26 +15,6 @@ class JunosDevice:
     """
 
     @property
-    def arp_table(self):
-        """
-        A list of ARP entries.
-
-        :returns: ARP entries
-        :rtype: list
-        """
-        table = []
-        old_table = self._connection.rpc.get_arp_table_information(vpn=self.vpn)
-        for old_entry in old_table:
-            if old_entry.tag != 'arp-table-entry':
-                continue
-            entry = dict(ip_address=old_entry.findtext('ip-address').strip(),
-                         interface=old_entry.findtext('interface-name').strip(),
-                         hostname=self.hostname.strip(), vpn=self.vpn,
-                         mac_address=old_entry.findtext('mac-address').strip())
-            table.append(entry)
-        return table
-
-    @property
     def route_table(self):
         """
         A list of routes bound to current route-tables
@@ -56,7 +36,8 @@ class JunosDevice:
         """
         A list of interfaces with thier parameters
 
-        :return: list
+        :returns: list of interface
+        :rtype: list
         """
         table = []
         root = self._connection.rpc.get_interface_information()
@@ -77,7 +58,8 @@ class JunosDevice:
         """
         A list of routing instances with parameters
 
-        :return: list
+        :returns: list of routing instances
+        :rtype: list
         """
         table = []
         root = self._connection.rpc.get_instance_information(detail=True)
@@ -97,18 +79,33 @@ class JunosDevice:
     def facts(self):
         return self._facts
 
+    def get_arp_table(self, vpn='default'):
+        """
+        A list of ARP entries.
+
+        :returns: ARP entries
+        :rtype: list
+        """
+        table = []
+        old_table = self._connection.rpc.get_arp_table_information(vpn=vpn)
+        for old_entry in old_table:
+            if old_entry.tag != 'arp-table-entry':
+                continue
+            entry = dict(ip_address=old_entry.findtext('ip-address').strip(),
+                         interface_name=old_entry.findtext('interface-name').strip(),
+                         hostname=old_entry.findtext('hostname').strip(),
+                         vpn=vpn,
+                         mac_address=old_entry.findtext('mac-address').strip())
+            table.append(entry)
+        return table
+
     def __init__(self, *args, **kwargs):
         self.hostname = args[0] if len(args) else kwargs.get('host')
         self.user = kwargs.get('user', getenv('USER'))
         self.password = kwargs.get('password')
         self.timeout = kwargs.get('timeout')
-        self.vpn = kwargs.get('vpn', 'default')
 
     def connect(self):
-        """Connect to a device.
-        :returns: a connection to a Juniper Networks device.
-        :rtype: ``Device``
-        """
         dev = Device(host=self.hostname, user=self.user, passwd=self.password)
         dev.open()
         dev.timeout = self.timeout
@@ -119,3 +116,11 @@ class JunosDevice:
     def disconnect(self):
         if self._connection:
             self._connection.close()
+
+if __name__ == '__main__':
+    device = JunosDevice(host='10.0.1.1', password='Password12!', user='django')
+    device.connect()
+    inst = device.route_instance_list
+    arp_t = device.get_arp_table()
+    print(arp_t)
+    device.disconnect()

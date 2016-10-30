@@ -1,4 +1,4 @@
-from os import getenv
+import os
 
 from jnpr.junos import Device
 
@@ -41,16 +41,27 @@ class JunosDevice:
         """
         table = []
         root = self._connection.rpc.get_interface_information()
+
         for phy_int in root:
             entry = dict(
-                (elt.tag, elt.text.strip()) for elt in phy_int.iter() if not len(elt) and elt.text is not None)
+                (elt.tag, elt.text.strip()) for elt in phy_int.findall('./') if not len(elt) and elt.text is not None)
             entry['int-type'] = 'physical-interface'
             table.append(entry)
+
             for log_int in phy_int.findall('logical-interface'):
                 entry = dict(
                     (elt.tag, elt.text.strip()) for elt in log_int.iter() if not len(elt) and elt.text is not None)
-                entry['int-type'] = 'logical-interface'
-                table.append(entry)
+                try:
+                    unparsed_prefix = entry['ifa-destination']
+                except:
+                    pass
+                else:
+                    parsed_prefix = unparsed_prefix.split('/').pop()
+                    entry['ifa-prefix'] = parsed_prefix
+                finally:
+                    entry['int-type'] = 'logical-interface'
+                    table.append(entry)
+
         return table
 
     @property
@@ -101,9 +112,10 @@ class JunosDevice:
 
     def __init__(self, *args, **kwargs):
         self.hostname = args[0] if len(args) else kwargs.get('host')
-        self.user = kwargs.get('user', getenv('USER'))
+        self.user = kwargs.get('user', os.getenv('USER'))
         self.password = kwargs.get('password')
         self.timeout = kwargs.get('timeout')
+        self.db_flag = kwargs.get('db_flag', False)
 
     def connect(self):
         dev = Device(host=self.hostname, user=self.user, passwd=self.password)
@@ -117,10 +129,25 @@ class JunosDevice:
         if self._connection:
             self._connection.close()
 
+    def _check_model(modelname='DOES NOT EXIST'):
+        import pyclbr
+        model_names = [md for md in pyclbr.readmodule('models')]
+        return model_names
+
+
+
 if __name__ == '__main__':
     device = JunosDevice(host='10.0.1.1', password='Password12!', user='django')
-    device.connect()
-    inst = device.route_instance_list
-    arp_t = device.get_arp_table()
-    print(arp_t)
-    device.disconnect()
+    # device.connect()
+    # inst = device.route_instance_list
+    # arp_t = device.get_arp_table()
+    # route_t = device.route_table
+    # int_l = device.interface_list
+    # for interface in int_l:
+    #     if interface['name'] == 'ge-0/0/1.0':
+    #         print(interface)
+    #         break
+    # print('INT_L', int_l)
+    # device.disconnect()
+    x = device._check_model()
+    print(x)

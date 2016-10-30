@@ -10,7 +10,6 @@ class Device (models.Model):
 
     :attr ip_address
         Is a mandatory upon creation. All other will be set after connection.
-        if fqdn is set instead of ip_address, it will be resolved upon form verification
 
     :attr fqdn
         *OPTIONAL* Will be resolved to ip_address if ip_address is not set by a user.
@@ -23,7 +22,7 @@ class Device (models.Model):
     version = models.CharField('Device software version:', max_length=50, blank=True, editable=False)
     serialnumber = models.CharField('Device S/N:', max_length=50, blank=True, editable=False)
     up_time = models.CharField('Device uptime:', max_length=50, blank=True, editable=False)
-    two_re = models.BooleanField('Device has 2 RE (True/False)',blank=True, editable=False)
+    two_re = models.BooleanField('Device has 2 RE (True/False)', blank=True, editable=False)
     last_checked_time = models.DateTimeField('Device last checked time:', auto_now=True, editable=False)
     last_checked_status = models.BooleanField('True for UP, False for DOWN:', editable=False)
 
@@ -31,7 +30,7 @@ class Device (models.Model):
 class DeviceInstance(models.Model):
     """
     DeviceInstance class.
-    Represents devices routing instance
+    Represents devices routing instance.
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     instance_name = models.CharField(max_length=100, editable=False, primary_key=True)
@@ -40,12 +39,73 @@ class DeviceInstance(models.Model):
     instance_state = models.CharField(max_length=30, editable=False)
 
 
-class InstanceArpTable:
+class InstanceArpTable(models.Model):
+    """
+    InstanceArptable class.
+    Represents device arp table.
+    Be cautious! In Juniper terms VPN is not exactly routing instance!
+    So there is special DB field - "vpn" for each entry.
+    """
     related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
-    mac_address = models.CharField(max_length=17, editable=False)
+    mac_address = models.CharField(max_length=17, editable=False, primary_key=True)
     ip_address = models.GenericIPAddressField(editable=False)
     interface_name = models.CharField(max_length=100, editable=False)
-    hostname = models.CharField(max_length=100, editable=False, primary_key=True)
+    hostname = models.CharField(max_length=100, editable=False)
+    vpn = models.CharField(max_length=100, editable=False)
+
+
+class InstanceRouteTable(models.Model):
+    """
+    InstanceRouteTable class.
+    Represents device route table.
+    """
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    rt_destination_ip = models.GenericIPAddressField(editable=False)
+    rt_destination_prefix = models.PositiveSmallIntegerField(editable=False)
+    active_tag = models.BooleanField('True for *, False for other:', editable=False)
+    protocol_name = models.CharField(max_length=20, editable=False)
+    preference = models.PositiveSmallIntegerField(editable=False)
+    nh_local_interface = models.CharField(max_length=100, editable=False, blank=True)
+    nh_table = models.CharField(max_length=100, editable=False, blank=True)
+    nh_type = models.CharField(max_length=100, editable=False, blank=True)
+    via = models.CharField(max_length=100, editable=False, blank=True)
+
+
+class InstancePhyInterface(models.Model):
+    """
+    InstanceInterface class.
+    Represents device physical interfaces (stores info about them).
+    """
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50, editable=False, primary_key=True)
+    admin_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
+    oper_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
+    speed = models.CharField(max_length=20, editable=False, blank=True)
+    mtu = models.CharField(max_length=20, editable=False, blank=True)
+    link_mode = models.CharField(max_length=20, editable=False, blank=True)
+    if_auto_negotiation = models.CharField(max_length=20, editable=False, blank=True)
+    link_level_type = models.CharField(max_length=20, editable=False, blank=True)
+    current_physical_address = models.CharField(max_length=34, editable=False, blank=True)
+    hardware_physical_address = models.CharField(max_length=34, editable=False, blank=True)
+
+
+class InstanceLogInterface(models.Model):
+    """
+    InstanceInterface class.
+    Represents device logical interfaces (stores info about them).
+    """
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    related_interface = models.ForeignKey(InstancePhyInterface, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50, editable=False, primary_key=True)
+    address_family_name = models.CharField(max_length=50, editable=False, blank=True)
+    encapsulation =  models.CharField(max_length=20, editable=False, blank=True)
+    mtu = models.CharField(max_length=20, editable=False, blank=True)
+    ifa_local = models.GenericIPAddressField(editable=False, blank=True, null=True)
+    ifa_prefix = models.SmallIntegerField(editable=False,  blank=True, null=True)
+    input_packets = models.IntegerField(editable=False, blank=True, null=True)
+    output_packets = models.IntegerField(editable=False, blank=True, null=True)
+    filter_information = models.CharField(max_length=100, editable=False, blank=True)
+    logical_interface_zone_name = models.CharField(max_length=100, editable=False, blank=True)
 
 
 def device_config_path(instance, filename):
@@ -54,12 +114,10 @@ def device_config_path(instance, filename):
 
 
 class DeviceConfig (models.Model):
-
     """
     Device Configuration class.
     Represents configuration files for each device
     """
-
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     upload_path = models.FileField(upload_to=device_config_path)
     upload_time = models.DateTimeField(editable=False, auto_now=True)

@@ -9,8 +9,8 @@ class _CheckModel:
     Class _CheckModel
     Decorator class. When JunosDevices class instance has self.db_flag set to True,
         this decorator performs check if the model name (if specified) refers to actual
-        Django model from ".models.py"
-    Works with class _Wrapper only. _Wrapper retains both instances _CheckModel and JunosDevice
+        Django model from ".models.py".
+    Works with class _Wrapper only. _Wrapper retains both instances _CheckModel and JunosDevice.
     """
     def __init__(self, cmeth):
         self.cmeth = cmeth
@@ -29,7 +29,7 @@ class _CheckModel:
             else:
                 raise KeyError('Django model {} doesnot exist!'.format(cmeth_result[1]))
         else:
-            return cmeth_result
+            return cmeth_result[0]
 
     def __get__(self, instance, owner):
         return _Wrapper(self, instance)
@@ -47,13 +47,15 @@ class _Wrapper:
 
 class JunosDevice:
 
-    """Base class for Junos devices.
+    """
+    Base class for Junos devices.
 
     :attr:`hostname`: router hostname
     :attr:`user`: user for logging into `hostname`
     :attr:`password`: password for logging into `hostname`
     :attr:`timeout`: time to wait for a response
     :attr:`connection`: connection to `hostname`
+    :attr: 'db_flag': if set tries to resolve Django model name
     """
 
     @_CheckModel
@@ -199,16 +201,10 @@ if __name__ == '__main__':
     route_t = device.get_route_table()
     int_l = device.get_log_interface_list()
     int_p = device.get_phy_interface_list()
-    # for interface in int_l:
-    #     if interface['name'] == 'ge-0/0/1.0':
-    #         print(interface)
-    #         break
-    # print('INT_L', int_l)
-    # device.disconnect()
-    # x = device._check_model()
-    # print(x)
+    device.disconnect()
     # print(arp_t)
     # print(facts)
     # print(inst)
     print(int_l)
     print(int_p)
+

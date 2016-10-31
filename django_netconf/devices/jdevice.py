@@ -193,7 +193,7 @@ class JunosDevice:
             self._connection.close()
 
 if __name__ == '__main__':
-    device = JunosDevice(host='10.0.1.1', password='Password12!', user='django',db_flag=True)
+    device = JunosDevice(host='10.0.1.1', password='Password12!', user='django', db_flag=True)
     device.connect()
     facts = device.get_facts()
     inst = device.get_route_instance_list()
@@ -207,4 +207,3 @@ if __name__ == '__main__':
     # print(inst)
     print(int_l)
     print(int_p)
-

@@ -37,9 +37,18 @@ class DeviceInstance(models.Model):
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     instance_name = models.CharField(max_length=100, editable=False, primary_key=True)
-    instance_type = models.CharField(max_length=30, editable=False)
-    router_id = models.GenericIPAddressField(editable=False)
-    instance_state = models.CharField(max_length=30, editable=False)
+    instance_type = models.CharField(max_length=30, editable=False, blank=True)
+    router_id = models.GenericIPAddressField(editable=False, blank=True)
+    instance_state = models.CharField(max_length=30, editable=False, blank=True)
+
+
+class InstanceRIB(models.Model):
+    """
+    InstanceRIB class.
+    Represents RIBs for each routing instance.
+    """
+    related_instance = models.ForeignKey(DeviceInstance,on_delete=models.CASCADE)
+    table_name = models.CharField(max_length=100, editable=False, primary_key=True)
 
 
 class InstanceArpTable(models.Model):
@@ -79,7 +88,7 @@ class InstancePhyInterface(models.Model):
     InstanceInterface class.
     Represents device physical interfaces (stores info about them).
     """
-    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False, primary_key=True)
     admin_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
     oper_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
@@ -97,7 +106,7 @@ class InstanceLogInterface(models.Model):
     InstanceInterface class.
     Represents device logical interfaces (stores info about them).
     """
-    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     related_interface = models.ForeignKey(InstancePhyInterface, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False, primary_key=True)
     address_family_name = models.CharField(max_length=50, editable=False, blank=True)

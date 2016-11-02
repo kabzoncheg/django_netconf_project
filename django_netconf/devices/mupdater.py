@@ -15,9 +15,12 @@ class ModelUpdater:
         """
         Default updater method.
 
-        On call can update multiple instances of one model class; parameters for each instance
-            should be passed as dictionaries within single list, passed as :attr self.data.
-            If there is no entry in database for specific instance, it will be created.
+        On call can update multiple instances of one model class. Parameters for each instance
+            should be passed as dictionaries within single list in :attr self.data.
+        To successfully save results in database, specific Django model attributes must match
+            dict keys. In other case specific static method must be created.
+        If there is no entry in database for specific instance, it will be created on
+            successful model save() method.
         Invokes one of specific  static methods (if defined).
         Specific static methods must follow naming convention, refer to :attr: updater_name.
 
@@ -26,29 +29,55 @@ class ModelUpdater:
         for entry in self.data:
             model_inst = self.ModelClass()
             updater_name = '_' + self.model_name.lower() + '_updater'
+            cascade_model_inst = []
             if updater_name in ModelUpdater.__dict__:
-                getattr(ModelUpdater, updater_name)(entry, model_inst, self.host)
+                getattr(ModelUpdater, updater_name)(entry=entry, model_inst=model_inst,
+                                                    host=self.host, cascade_model_inst=cascade_model_inst)
             for key in model_inst.__dict__.keys():
                 if key in entry.keys():
                     setattr(model_inst, key, entry[key])
             model_inst.save()
+            if cascade_model_inst:
+                for inst in cascade_model_inst:
+                    inst.save()
         return True
 
     @staticmethod
-    def _device_updater(entry, model_inst, host):
+    def _device_updater(**kwargs):
+        """
+        Modifies model_inst
+
+        :return: None
+        """
+        entry = kwargs.get('entry')
+        model_inst = kwargs.get('model_inst')
+        host = kwargs.get('host')
         setattr(model_inst, 'ip_address', host)
         up_time = []
         for key in entry.keys():
             if key.startswith('RE'):
                 up_time.append(entry[key]['up_time'])
         setattr(model_inst, 'up_time', max(up_time))
-        return model_inst
 
     @staticmethod
-    def _deviceinstance_updater(entry, model_inst, host):
+    def _deviceinstance_updater(**kwargs):
+        """
+        Modifies model_inst and cascade_model_inst
+
+        :return: None
+        """
+        entry = kwargs.get('entry')
+        model_inst = kwargs.get('model_inst')
+        host = kwargs.get('host')
+        cascade_model_inst = kwargs.get('cascade_model_inst')
         from devices.models import Device
         setattr(model_inst, 'related_device', Device.objects.get(ip_address=host))
-        return model_inst
+        setattr(model_inst, 'instance_name', entry['instance_name'])
+        if 'instance_rib_list' in entry:
+            from devices.models import InstanceRIB
+            for rib in entry['instance_rib_list']:
+                rib_inst = InstanceRIB(related_instance=model_inst, table_name=rib)
+                cascade_model_inst.append(rib_inst)
 
     @staticmethod
     def _instancearptable_updater(self, model_inst):
@@ -121,7 +150,8 @@ if __name__ == '__main__':
 
     # print(facts)
     print(inst)
+    #print(route_t)
 
-    # facts_updater = ModelUpdater(facts, host=hostn).updater()
+    facts_updater = ModelUpdater(facts, host=hostn).updater()
     instance_updater = ModelUpdater(inst, host=hostn).updater()
     # arp_updater = ModelUpdater(arp_t, host=hostn).updater()

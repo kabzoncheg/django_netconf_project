@@ -13,6 +13,9 @@ class Device (models.Model):
 
     :attr fqdn
         *OPTIONAL* Will be resolved to ip_address if ip_address is not set by a user.
+
+    :attr up_time
+        Must be chosen as maximum of 2 RE up time (if system has 2 RE)
     """
     ip_address = models.GenericIPAddressField('Devices management IP-address:', primary_key=True,)
     description = models.CharField('Device description', max_length=300, blank=True)

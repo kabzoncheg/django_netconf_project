@@ -137,17 +137,22 @@ class JunosDevice:
             entry = {}
             for elt in route_inst.findall('*'):
                 if not len(elt):
-                    entry[elt.tag] = elt.text
+                    entry[elt.tag.replace('-', '_')] = elt.text
                 if elt.tag == 'instance-interface':
-                    entry['instance-interface_list'] = list(int_elt.text for int_elt in elt)
+                    entry['instance_interface_list'] = list(int_elt.text for int_elt in elt)
                 if elt.tag == 'instance-rib':
-                    entry['instance-rib_list'] = list(rib_elt.text for rib_elt in elt if rib_elt.tag == 'irib-name')
+                    entry['instance_rib_list'] = list(rib_elt.text for rib_elt in elt if rib_elt.tag == 'irib-name')
             table.append(entry)
         return table, model
 
     @_CheckModel
     def get_facts(self):
+        """
+        device
+        :return: dict with Device facts
+        """
         model = 'Device'
+        self._facts['last_checked_status'] = True
         return self._facts, model
 
     @_CheckModel

@@ -8,40 +8,79 @@ from django.core.management import settings
 
 class ModelUpdater:
 
-    def updater(self):
+    """
+    Base class for updating Django models
+    """
 
+    def updater(self):
+        """
+        Default updater method.
+        Invokes one of specific  static methods (if defined)
+        Specific static methods must follow naming convention, refer to :attr: updater_name
+
+        :return: True or error
+        """
         model_inst = self.ModelClass()
         updater_name = '_' + self.model_name.lower() + '_updater'
         if updater_name in ModelUpdater.__dict__:
-            updater_result = getattr(ModelUpdater, updater_name)(self, model_inst)
-        # else:
-            # print('TESTING. No specific updaters')
+            getattr(ModelUpdater, updater_name)(self, model_inst)
         # print('self.ModelClass.__dict__ OUTPUT:', model_inst.__dict__)
-        for key in model_inst.__dict__.keys():
-            if key in self.data.keys():
-                setattr(model_inst, key, self.data[key])
-                model_inst.save()
-                print(key)
+        if isinstance(self.data, list) and len(self.data) > 1:
+            for item in self.data:
+                for key in model_inst.__dict__.keys():
+                    if key in item.keys():
+                        setattr(model_inst, key, item[key])
+                        try:
+                            model_inst.save()
+                        except Exception as err:
+                            return err
+                        else:
+                            return True
+        else:
+            for key in model_inst.__dict__.keys():
+                if key in self.data.keys():
+                    setattr(model_inst, key, self.data[key])
+                    try:
+                        model_inst.save()
+                    except Exception as err:
+                        return err
+                    else:
+                        return True
 
+    @staticmethod
     def _device_updater(self, model_inst):
         setattr(model_inst, 'ip_address', self.host)
-        setattr(model_inst, 'last_checked_status', True)
+        up_time = []
+        for key in self.data.keys():
+            if key.startswith('RE'):
+                up_time.append(self.data[key]['up_time'])
+        setattr(model_inst, 'up_time', max(up_time))
         return model_inst
 
-    def _deviceinstance_updater(self):
+    @staticmethod
+    def _deviceinstance_updater(self, model_inst):
         print('TESTING. Specific Device Instance Updater')
+        return model_inst
 
-    def _instancearptable_updater(self):
+    @staticmethod
+    def _instancearptable_updater(self, model_inst):
         print('TESTING. Specific ARP Table Updater')
+        return model_inst
 
-    def _instanceroutetable_updater(self):
+    @staticmethod
+    def _instanceroutetable_updater(self, model_inst):
         print('TESTING. Specific instance Route Table Updater')
+        return model_inst
 
-    def _instancephyinterface_updater(self):
+    @staticmethod
+    def _instancephyinterface_updater(self, model_inst):
         print('TESTING. Specific Instance Physical Interface Updater')
+        return model_inst
 
-    def _instanceloginterface_updater(self):
+    @staticmethod
+    def _instanceloginterface_updater(self, model_inst):
         print('TESTING. Specific Instance logical Interface Updater')
+        return model_inst
 
     def __init__(self, *args, **kwargs):
         """
@@ -92,7 +131,8 @@ if __name__ == '__main__':
     int_p = device.get_phy_interface_list()
     device.disconnect()
 
-    print(facts)
+    print(inst)
 
-    facts_updater = ModelUpdater(facts, host=host).updater()
+    # facts_updater = ModelUpdater(facts, host=host).updater()
+    instance_updater = ModelUpdater(inst, host=host).updater()
     # arp_updater = ModelUpdater(arp_t, host=host).updater()

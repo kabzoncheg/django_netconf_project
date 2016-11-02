@@ -152,8 +152,10 @@ class JunosDevice:
         :return: dict with Device facts
         """
         model = 'Device'
+        table =[]
         self._facts['last_checked_status'] = True
-        return self._facts, model
+        table.append(self._facts)
+        return table, model
 
     @_CheckModel
     def get_arp_table(self, vpn='default'):

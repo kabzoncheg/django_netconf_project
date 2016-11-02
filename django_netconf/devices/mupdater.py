@@ -3,7 +3,6 @@ import sys
 
 from django import setup as django_setup
 from django.core.management import settings
-# from django.core.exceptions import ObjectDoesNotExist
 
 
 class ModelUpdater:
@@ -15,51 +14,40 @@ class ModelUpdater:
     def updater(self):
         """
         Default updater method.
-        Invokes one of specific  static methods (if defined)
-        Specific static methods must follow naming convention, refer to :attr: updater_name
+
+        On call can update multiple instances of one model class; parameters for each instance
+            should be passed as dictionaries within single list, passed as :attr self.data.
+            If there is no entry in database for specific instance, it will be created.
+        Invokes one of specific  static methods (if defined).
+        Specific static methods must follow naming convention, refer to :attr: updater_name.
 
         :return: True or error
         """
-        model_inst = self.ModelClass()
-        updater_name = '_' + self.model_name.lower() + '_updater'
-        if updater_name in ModelUpdater.__dict__:
-            getattr(ModelUpdater, updater_name)(self, model_inst)
-        # print('self.ModelClass.__dict__ OUTPUT:', model_inst.__dict__)
-        if isinstance(self.data, list) and len(self.data) > 1:
-            for item in self.data:
-                for key in model_inst.__dict__.keys():
-                    if key in item.keys():
-                        setattr(model_inst, key, item[key])
-                        try:
-                            model_inst.save()
-                        except Exception as err:
-                            return err
-                        else:
-                            return True
-        else:
+        for entry in self.data:
+            model_inst = self.ModelClass()
+            updater_name = '_' + self.model_name.lower() + '_updater'
+            if updater_name in ModelUpdater.__dict__:
+                getattr(ModelUpdater, updater_name)(entry, model_inst, self.host)
             for key in model_inst.__dict__.keys():
-                if key in self.data.keys():
-                    setattr(model_inst, key, self.data[key])
-                    try:
-                        model_inst.save()
-                    except Exception as err:
-                        return err
-                    else:
-                        return True
+                if key in entry.keys():
+                    setattr(model_inst, key, entry[key])
+            model_inst.save()
+        return True
 
     @staticmethod
-    def _device_updater(self, model_inst):
-        setattr(model_inst, 'ip_address', self.host)
+    def _device_updater(entry, model_inst, host):
+        setattr(model_inst, 'ip_address', host)
         up_time = []
-        for key in self.data.keys():
+        for key in entry.keys():
             if key.startswith('RE'):
-                up_time.append(self.data[key]['up_time'])
+                up_time.append(entry[key]['up_time'])
         setattr(model_inst, 'up_time', max(up_time))
         return model_inst
 
     @staticmethod
-    def _deviceinstance_updater(self, model_inst):
-        print('TESTING. Specific Device Instance Updater')
+    def _deviceinstance_updater(entry, model_inst, host):
+        from devices.models import Device
+        setattr(model_inst, 'related_device', Device.objects.get(ip_address=host))
         return model_inst
 
     @staticmethod
@@ -92,8 +80,8 @@ class ModelUpdater:
                 So it hast a form of: from devices.models import ModelName
                 Possibly it is a Django bug! FIGURE IT OUT!
 
-        :param args: Tuple, contains dictionary with data, that shoud be passed to Django model,
-                    and Django model name as string.
+        :param args: Tuple, contains list with dictionary(s) with data, that
+                    shoud be passed to Django model, and Django model name as string.
         :param kwargs: String, with JunosDevice IP-address
         """
         self.data = args[0][0]
@@ -120,8 +108,8 @@ class ModelUpdater:
 
 if __name__ == '__main__':
     from django_netconf.devices.jdevice import JunosDevice
-    host = '10.0.1.1'
-    device = JunosDevice(host=host, password='Password12!', user='django', db_flag=True)
+    hostn = '10.0.1.1'
+    device = JunosDevice(host=hostn, password='Password12!', user='django', db_flag=True)
     device.connect()
     facts = device.get_facts()
     inst = device.get_route_instance_list()
@@ -131,8 +119,9 @@ if __name__ == '__main__':
     int_p = device.get_phy_interface_list()
     device.disconnect()
 
+    # print(facts)
     print(inst)
 
-    # facts_updater = ModelUpdater(facts, host=host).updater()
-    instance_updater = ModelUpdater(inst, host=host).updater()
-    # arp_updater = ModelUpdater(arp_t, host=host).updater()
+    # facts_updater = ModelUpdater(facts, host=hostn).updater()
+    instance_updater = ModelUpdater(inst, host=hostn).updater()
+    # arp_updater = ModelUpdater(arp_t, host=hostn).updater()

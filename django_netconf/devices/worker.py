@@ -61,15 +61,15 @@ def update_model_device(device_ip, facts={}):
             device_object.name = facts['hostname']
         if device_object.fqdn != facts['fqdn']:
             device_object.fqdn = facts['fqdn']
-        if device_object.platform != facts['model']:
-            device_object.platform = facts['model']
-        if device_object.software_version != facts['version']:
-            device_object.software_version = facts['version']
-        if device_object.serial_number != facts['serialnumber']:
-            device_object.serial_number = facts['serialnumber']
+        # if device_object.platform != facts['model']:
+        #     device_object.platform = facts['model']
+        # if device_object.software_version != facts['version']:
+        #     device_object.software_version = facts['version']
+        # if device_object.serial_number != facts['serialnumber']:
+        #     device_object.serial_number = facts['serialnumber']
         if device_object.up_time != facts['RE0']['up_time']:
             device_object.up_time = facts['RE0']['up_time']
-        device_object.last_checked_status = 'UP'
+        device_object.last_checked_status = True
         device_object.save()
         logger.info('fineshed updating model {}'.format(Device))
 

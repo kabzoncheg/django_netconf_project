@@ -16,15 +16,15 @@ class Device (models.Model):
     """
     ip_address = models.GenericIPAddressField('Devices management IP-address:', primary_key=True,)
     description = models.CharField('Device description', max_length=300, blank=True)
-    name = models.CharField('Device name:', max_length=63, blank=True, editable=False)
+    hostname = models.CharField('Device name:', max_length=63, blank=True, editable=False)
     fqdn = models.CharField('Device FQDN:', max_length=63, blank=True)
     model = models.CharField('Device hardware model:', max_length=50, blank=True, editable=False)
     version = models.CharField('Device software version:', max_length=50, blank=True, editable=False)
     serialnumber = models.CharField('Device S/N:', max_length=50, blank=True, editable=False)
     up_time = models.CharField('Device uptime:', max_length=50, blank=True, editable=False)
-    two_re = models.BooleanField('Device has 2 RE (True/False)', blank=True, editable=False)
+    two_re = models.BooleanField('Device has 2 RE (True/False)', blank=True, editable=False, default=False)
     last_checked_time = models.DateTimeField('Device last checked time:', auto_now=True, editable=False)
-    last_checked_status = models.BooleanField('True for UP, False for DOWN:', editable=False)
+    last_checked_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
 
 
 class DeviceInstance(models.Model):

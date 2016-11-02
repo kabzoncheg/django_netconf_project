@@ -1,2 +1,2 @@
-django=1.10.1
-junos-eznc=2.0.0
+Django>=1.10.3
+junos-eznc>=2.0.0

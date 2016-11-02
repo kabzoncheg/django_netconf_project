@@ -205,5 +205,5 @@ if __name__ == '__main__':
     # print(arp_t)
     # print(facts)
     # print(inst)
-    print(int_l)
-    print(int_p)
+    # print(int_l)
+    # print(int_p)

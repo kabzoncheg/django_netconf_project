@@ -139,5 +139,5 @@ def device_updater(host_list, tables_to_update=()):
     print('Took {}'.format(time() - ts))
 
 if __name__ == '__main__':
-    hosts = ['10.0.1.1', '10.0.1.2']
+    hosts = ['10.0.1.1', '10.0.2.15']
     device_updater(hosts)

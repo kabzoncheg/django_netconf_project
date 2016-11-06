@@ -3,6 +3,8 @@ import sys
 
 from django import setup as django_setup
 from django.core.management import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.utils import IntegrityError
 
 
 class ModelUpdater:
@@ -27,12 +29,12 @@ class ModelUpdater:
         :return: True or error
         """
         for entry in self.data:
-            model_inst = self.ModelClass()
             updater_name = '_' + self.model_name.lower() + '_updater'
-            cascade_model_inst = []
             if updater_name in ModelUpdater.__dict__:
-                getattr(ModelUpdater, updater_name)(entry=entry, model_inst=model_inst,
-                                                    host=self.host, cascade_model_inst=cascade_model_inst)
+                model_inst, cascade_model_inst = getattr(ModelUpdater, updater_name)(self, entry=entry)
+            else:
+                model_inst = self.ModelClass()
+                cascade_model_inst = None
             for key in model_inst.__dict__.keys():
                 if key in entry.keys():
                     setattr(model_inst, key, entry[key])
@@ -42,62 +44,53 @@ class ModelUpdater:
                     inst.save()
         return True
 
-    @staticmethod
-    def _device_updater(**kwargs):
+    def _device_updater(self, entry):
         """
         Modifies model_inst
 
         :return: None
         """
-        entry = kwargs.get('entry')
-        model_inst = kwargs.get('model_inst')
-        host = kwargs.get('host')
-        setattr(model_inst, 'ip_address', host)
+        model_inst = self.ModelClass()
+        setattr(model_inst, 'ip_address', self.host)
         up_time = []
         for key in entry.keys():
             if key.startswith('RE'):
                 up_time.append(entry[key]['up_time'])
         setattr(model_inst, 'up_time', max(up_time))
+        return model_inst, None
 
-    @staticmethod
-    def _deviceinstance_updater(**kwargs):
+    def _deviceinstance_updater(self, entry):
         """
         Modifies model_inst and cascade_model_inst
 
         :return: None
         """
-        entry = kwargs.get('entry')
-        model_inst = kwargs.get('model_inst')
-        host = kwargs.get('host')
-        cascade_model_inst = kwargs.get('cascade_model_inst')
         from devices.models import Device
-        setattr(model_inst, 'related_device', Device.objects.get(ip_address=host))
-        setattr(model_inst, 'instance_name', entry['instance_name'])
+        model_inst = self.ModelClass.objects.get_or_create(related_device=Device.objects.get(ip_address=self.host),
+                                                           instance_name=entry['instance_name'])[0]
+        cascade_model_inst = []
         if 'instance_rib_list' in entry:
             from devices.models import InstanceRIB
             for rib in entry['instance_rib_list']:
-                rib_inst = InstanceRIB(related_instance=model_inst, table_name=rib)
+                rib_inst = InstanceRIB.objects.get_or_create(related_instance=model_inst, table_name=rib)[0]
                 cascade_model_inst.append(rib_inst)
+        return model_inst, cascade_model_inst
 
     @staticmethod
     def _instancearptable_updater(self, model_inst):
         print('TESTING. Specific ARP Table Updater')
-        return model_inst
 
     @staticmethod
     def _instanceroutetable_updater(self, model_inst):
         print('TESTING. Specific instance Route Table Updater')
-        return model_inst
 
     @staticmethod
     def _instancephyinterface_updater(self, model_inst):
         print('TESTING. Specific Instance Physical Interface Updater')
-        return model_inst
 
     @staticmethod
     def _instanceloginterface_updater(self, model_inst):
         print('TESTING. Specific Instance logical Interface Updater')
-        return model_inst
 
     def __init__(self, *args, **kwargs):
         """
@@ -137,7 +130,7 @@ class ModelUpdater:
 
 if __name__ == '__main__':
     from django_netconf.devices.jdevice import JunosDevice
-    hostn = '10.0.1.1'
+    hostn = '10.0.3.2'
     device = JunosDevice(host=hostn, password='Password12!', user='django', db_flag=True)
     device.connect()
     facts = device.get_facts()
@@ -149,8 +142,8 @@ if __name__ == '__main__':
     device.disconnect()
 
     # print(facts)
-    print(inst)
-    #print(route_t)
+    # print(inst)
+    # print(route_t)
 
     facts_updater = ModelUpdater(facts, host=hostn).updater()
     instance_updater = ModelUpdater(inst, host=hostn).updater()

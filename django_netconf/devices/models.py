@@ -36,10 +36,13 @@ class DeviceInstance(models.Model):
     Represents devices routing instance.
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    instance_name = models.CharField(max_length=100, editable=False, primary_key=True)
+    instance_name = models.CharField(max_length=100, editable=False)
     instance_type = models.CharField(max_length=30, editable=False, blank=True)
-    router_id = models.GenericIPAddressField(editable=False, blank=True)
+    router_id = models.GenericIPAddressField(editable=False, blank=True, null=True)
     instance_state = models.CharField(max_length=30, editable=False, blank=True)
+
+    class Meta:
+        unique_together = ('related_device', 'instance_name')
 
 
 class InstanceRIB(models.Model):
@@ -48,7 +51,7 @@ class InstanceRIB(models.Model):
     Represents RIBs for each routing instance.
     """
     related_instance = models.ForeignKey(DeviceInstance,on_delete=models.CASCADE)
-    table_name = models.CharField(max_length=100, editable=False, primary_key=True)
+    table_name = models.CharField(max_length=100, editable=False)
 
 
 class InstanceArpTable(models.Model):
@@ -59,7 +62,7 @@ class InstanceArpTable(models.Model):
     So there is special DB field - "vpn" for each entry.
     """
     related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
-    mac_address = models.CharField(max_length=17, editable=False, primary_key=True)
+    mac_address = models.CharField(max_length=17, editable=False)
     ip_address = models.GenericIPAddressField(editable=False)
     interface_name = models.CharField(max_length=100, editable=False)
     hostname = models.CharField(max_length=100, editable=False)
@@ -89,7 +92,7 @@ class InstancePhyInterface(models.Model):
     Represents device physical interfaces (stores info about them).
     """
     related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50, editable=False, primary_key=True)
+    name = models.CharField(max_length=50, editable=False)
     admin_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
     oper_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
     speed = models.CharField(max_length=20, editable=False, blank=True)
@@ -108,7 +111,7 @@ class InstanceLogInterface(models.Model):
     """
     related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     related_interface = models.ForeignKey(InstancePhyInterface, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50, editable=False, primary_key=True)
+    name = models.CharField(max_length=50, editable=False)
     address_family_name = models.CharField(max_length=50, editable=False, blank=True)
     encapsulation =  models.CharField(max_length=20, editable=False, blank=True)
     mtu = models.CharField(max_length=20, editable=False, blank=True)

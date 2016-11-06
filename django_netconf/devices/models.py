@@ -50,8 +50,12 @@ class InstanceRIB(models.Model):
     InstanceRIB class.
     Represents RIBs for each routing instance.
     """
+    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     related_instance = models.ForeignKey(DeviceInstance,on_delete=models.CASCADE)
     table_name = models.CharField(max_length=100, editable=False)
+
+    class Meta:
+        unique_together = ('related_device', 'related_instance', 'table_name')
 
 
 class InstanceArpTable(models.Model):
@@ -61,19 +65,23 @@ class InstanceArpTable(models.Model):
     Be cautious! In Juniper terms VPN is not exactly routing instance!
     So there is special DB field - "vpn" for each entry.
     """
+    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
     mac_address = models.CharField(max_length=17, editable=False)
-    ip_address = models.GenericIPAddressField(editable=False)
-    interface_name = models.CharField(max_length=100, editable=False)
-    hostname = models.CharField(max_length=100, editable=False)
-    vpn = models.CharField(max_length=100, editable=False)
+    ip_address = models.GenericIPAddressField(editable=False, blank=True, null=True)
+    interface_name = models.CharField(max_length=100, editable=False, blank=True)
+    hostname = models.CharField(max_length=100, editable=False, blank=True)
+    vpn = models.CharField(max_length=100, editable=False, blank=True)
 
+    class Meta:
+        unique_together = ('related_device', 'related_instance', 'mac_address')
 
 class InstanceRouteTable(models.Model):
     """
     InstanceRouteTable class.
     Represents device route table.
     """
+    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
     rt_destination_ip = models.GenericIPAddressField(editable=False)
     rt_destination_prefix = models.PositiveSmallIntegerField(editable=False)
@@ -85,12 +93,17 @@ class InstanceRouteTable(models.Model):
     nh_type = models.CharField(max_length=100, editable=False, blank=True)
     via = models.CharField(max_length=100, editable=False, blank=True)
 
+    class Meta:
+        unique_together = ('related_device', 'related_instance', 'rt_destination_ip',
+                           'rt_destination_prefix')
+
 
 class InstancePhyInterface(models.Model):
     """
     InstanceInterface class.
     Represents device physical interfaces (stores info about them).
     """
+    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False)
     admin_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
@@ -103,12 +116,16 @@ class InstancePhyInterface(models.Model):
     current_physical_address = models.CharField(max_length=34, editable=False, blank=True)
     hardware_physical_address = models.CharField(max_length=34, editable=False, blank=True)
 
+    class Meta:
+        unique_together = ('related_device', 'related_rib', 'name')
+
 
 class InstanceLogInterface(models.Model):
     """
     InstanceInterface class.
     Represents device logical interfaces (stores info about them).
     """
+    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
     related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     related_interface = models.ForeignKey(InstancePhyInterface, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False)
@@ -122,6 +139,8 @@ class InstanceLogInterface(models.Model):
     filter_information = models.CharField(max_length=100, editable=False, blank=True)
     logical_interface_zone_name = models.CharField(max_length=100, editable=False, blank=True)
 
+    class Meta:
+        unique_together = ('related_device', 'related_rib', 'related_interface','name')
 
 def device_config_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/configs/device_<id>/filename

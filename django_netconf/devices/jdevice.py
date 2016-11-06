@@ -165,7 +165,6 @@ class JunosDevice:
         :returns: ARP entries
         :rtype: list
         """
-
         model = 'InstanceArpTable'
         table = []
         old_table = self._connection.rpc.get_arp_table_information(vpn=vpn)

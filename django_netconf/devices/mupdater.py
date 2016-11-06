@@ -3,8 +3,6 @@ import sys
 
 from django import setup as django_setup
 from django.core.management import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.utils import IntegrityError
 
 
 class ModelUpdater:
@@ -26,6 +24,10 @@ class ModelUpdater:
         Invokes one of specific  static methods (if defined).
         Specific static methods must follow naming convention, refer to :attr: updater_name.
 
+        Some Django models cannot be updated before another, for example DeviceInstance cannot
+            be updated if related Device entry does not exist! Handling this is purpose of
+            another models (worker.py)
+
         :return: True or error
         """
         for entry in self.data:
@@ -46,9 +48,9 @@ class ModelUpdater:
 
     def _device_updater(self, entry):
         """
-        Modifies model_inst
+        Creates instance of Device model class.
 
-        :return: None
+        :return: Device instance, None
         """
         model_inst = self.ModelClass()
         setattr(model_inst, 'ip_address', self.host)
@@ -61,45 +63,65 @@ class ModelUpdater:
 
     def _deviceinstance_updater(self, entry):
         """
-        Modifies model_inst and cascade_model_inst
+        Creates instance of DeviceInstance model class;
+        Creates instances of InstanceRIB model class.
 
-        :return: None
+        :return: DeviceInstance instance, list of InstanceRIB instances
         """
         from devices.models import Device
-        model_inst = self.ModelClass.objects.get_or_create(related_device=Device.objects.get(ip_address=self.host),
+        related_device_inst = Device.objects.get(ip_address=self.host)
+        model_inst = self.ModelClass.objects.get_or_create(related_device=related_device_inst,
                                                            instance_name=entry['instance_name'])[0]
         cascade_model_inst = []
         if 'instance_rib_list' in entry:
             from devices.models import InstanceRIB
             for rib in entry['instance_rib_list']:
-                rib_inst = InstanceRIB.objects.get_or_create(related_instance=model_inst, table_name=rib)[0]
+                rib_inst = InstanceRIB.objects.get_or_create(related_device=related_device_inst,
+                                                             related_instance=model_inst, table_name=rib)[0]
                 cascade_model_inst.append(rib_inst)
         return model_inst, cascade_model_inst
 
-    @staticmethod
-    def _instancearptable_updater(self, model_inst):
-        print('TESTING. Specific ARP Table Updater')
+    def _instancearptable_updater(self, entry):
+        """
+        Creates instance of InstanceArpTable model class.
 
-    @staticmethod
-    def _instanceroutetable_updater(self, model_inst):
-        print('TESTING. Specific instance Route Table Updater')
+        :return: InstanceArpTable instance, None
+        """
+        from devices.models import Device, DeviceInstance
+        related_device_inst = Device.objects.get(ip_address=self.host)
+        if entry['vpn'] == 'default':
+            instance_name = 'master'
+        else:
+            instance_name = entry['vpn']
+        related_instance_inst = DeviceInstance.objects.get(related_device=related_device_inst,
+                                                           instance_name=instance_name)
+        # print('DEVICE INSTANCE inst:', related_instance_inst.router_id)
+        print('MoDEL CLASS:', self.ModelClass)
+        model_inst = self.ModelClass.objects.get_or_create(related_device=related_device_inst,
+                                                             related_instance=related_instance_inst,
+                                                           mac_address=entry['mac_address'])[0]
+        return model_inst, None
 
-    @staticmethod
-    def _instancephyinterface_updater(self, model_inst):
-        print('TESTING. Specific Instance Physical Interface Updater')
+    def _instanceroutetable_updater(self, entry):
+        model_inst = self.ModelClass()
+        return model_inst, None
 
-    @staticmethod
-    def _instanceloginterface_updater(self, model_inst):
-        print('TESTING. Specific Instance logical Interface Updater')
+    def _instancephyinterface_updater(self, entry):
+        model_inst = self.ModelClass()
+        return model_inst, None
+
+    def _instanceloginterface_updater(self, entry):
+        model_inst = self.ModelClass()
+        return model_inst, None
 
     def __init__(self, *args, **kwargs):
         """
         Constructor.
 
-        :attr: self.ModelClass. Class from Django devices app's models
+        :attr: self.ModelClass. Class from Django devices app's models.
                 Relative import issue, beware!
                 Doesn't work: from django_netconf.devices.models import ModelName.
-                So it hast a form of: from devices.models import ModelName
+                So it hast a form of: from devices.models import ModelName.
                 Possibly it is a Django bug! FIGURE IT OUT!
 
         :param args: Tuple, contains list with dictionary(s) with data, that
@@ -130,21 +152,23 @@ class ModelUpdater:
 
 if __name__ == '__main__':
     from django_netconf.devices.jdevice import JunosDevice
-    hostn = '10.0.3.2'
-    device = JunosDevice(host=hostn, password='Password12!', user='django', db_flag=True)
-    device.connect()
-    facts = device.get_facts()
-    inst = device.get_route_instance_list()
-    arp_t = device.get_arp_table()
-    route_t = device.get_route_table()
-    int_l = device.get_log_interface_list()
-    int_p = device.get_phy_interface_list()
-    device.disconnect()
+    hosts_list = ['10.0.1.1', '10.0.3.2']
+    for hostn in hosts_list:
+        device = JunosDevice(host=hostn, password='Password12!', user='django', db_flag=True)
+        device.connect()
+        facts = device.get_facts()
+        instance = device.get_route_instance_list()
+        arp_t = device.get_arp_table()
+        route_t = device.get_route_table()
+        int_l = device.get_log_interface_list()
+        int_p = device.get_phy_interface_list()
+        device.disconnect()
 
-    # print(facts)
-    # print(inst)
-    # print(route_t)
+        # print(facts)
+        # print(inst)
+        print('ARP Table for {}: {}'.format(hostn, arp_t))
+        # print(route_t)
 
-    facts_updater = ModelUpdater(facts, host=hostn).updater()
-    instance_updater = ModelUpdater(inst, host=hostn).updater()
-    # arp_updater = ModelUpdater(arp_t, host=hostn).updater()
+        facts_updater = ModelUpdater(facts, host=hostn).updater()
+        instance_updater = ModelUpdater(instance, host=hostn).updater()
+        arp_updater = ModelUpdater(arp_t, host=hostn).updater()

@@ -82,19 +82,19 @@ class InstanceRouteTable(models.Model):
     Represents device route table.
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
+    related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
     rt_destination_ip = models.GenericIPAddressField(editable=False)
     rt_destination_prefix = models.PositiveSmallIntegerField(editable=False)
     active_tag = models.BooleanField('True for *, False for other:', editable=False)
-    protocol_name = models.CharField(max_length=20, editable=False)
-    preference = models.PositiveSmallIntegerField(editable=False)
+    protocol_name = models.CharField(max_length=20, editable=False, blank=True)
+    preference = models.PositiveSmallIntegerField(editable=False, null=True)
     nh_local_interface = models.CharField(max_length=100, editable=False, blank=True)
     nh_table = models.CharField(max_length=100, editable=False, blank=True)
     nh_type = models.CharField(max_length=100, editable=False, blank=True)
     via = models.CharField(max_length=100, editable=False, blank=True)
 
     class Meta:
-        unique_together = ('related_device', 'related_instance', 'rt_destination_ip',
+        unique_together = ('related_device', 'related_rib', 'rt_destination_ip',
                            'rt_destination_prefix')
 
 

@@ -72,8 +72,17 @@ class JunosDevice:
         for route_table in root:
             table_name = route_table.findtext('table-name')
             for route in route_table.findall('rt'):
-                entry = dict((elt.tag, elt.text) for elt in route.iter() if not len(elt) and elt.text is not None)
+                entry = dict((elt.tag.replace('-', '_'), elt.text) for elt in route.iter()
+                             if not len(elt) and elt.text is not None)
+                # entry['rt_destination_ip'], entry['rt_destination_prefix']
+                # and entry['active_tag'] for database normalization
+                entry['rt_destination_ip'], entry['rt_destination_prefix'] = entry['rt_destination'].split('/')
+                entry['rt_destination_prefix'] = int(entry['rt_destination_prefix'])
                 entry['table_name'] = table_name
+                if entry['active_tag'] == '*':
+                    entry['active_tag'] = True
+                else:
+                    entry['active_tag'] = False
                 table.append(entry)
         return table, model
 

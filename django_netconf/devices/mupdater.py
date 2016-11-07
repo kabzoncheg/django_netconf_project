@@ -68,15 +68,15 @@ class ModelUpdater:
 
         :return: DeviceInstance instance, list of InstanceRIB instances
         """
-        from devices.models import Device
-        related_device_inst = Device.objects.get(ip_address=self.host)
-        model_inst = self.ModelClass.objects.get_or_create(related_device=related_device_inst,
+        # related_device_id - is a Django 'magic'. Model argument is related_devices,
+        #   if it is used, instance of Device class should be passed as parameter
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host,
                                                            instance_name=entry['instance_name'])[0]
         cascade_model_inst = []
         if 'instance_rib_list' in entry:
             from devices.models import InstanceRIB
             for rib in entry['instance_rib_list']:
-                rib_inst = InstanceRIB.objects.get_or_create(related_device=related_device_inst,
+                rib_inst = InstanceRIB.objects.get_or_create(related_device_id=self.host,
                                                              related_instance=model_inst, table_name=rib)[0]
                 cascade_model_inst.append(rib_inst)
         return model_inst, cascade_model_inst
@@ -87,23 +87,29 @@ class ModelUpdater:
 
         :return: InstanceArpTable instance, None
         """
-        from devices.models import Device, DeviceInstance
-        related_device_inst = Device.objects.get(ip_address=self.host)
+        from devices.models import DeviceInstance
         if entry['vpn'] == 'default':
             instance_name = 'master'
         else:
             instance_name = entry['vpn']
-        related_instance_inst = DeviceInstance.objects.get(related_device=related_device_inst,
+        related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host,
                                                            instance_name=instance_name)
-        # print('DEVICE INSTANCE inst:', related_instance_inst.router_id)
-        print('MoDEL CLASS:', self.ModelClass)
-        model_inst = self.ModelClass.objects.get_or_create(related_device=related_device_inst,
-                                                             related_instance=related_instance_inst,
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host,
+                                                           related_instance=related_instance_inst,
                                                            mac_address=entry['mac_address'])[0]
         return model_inst, None
 
     def _instanceroutetable_updater(self, entry):
-        model_inst = self.ModelClass()
+        from devices.models import InstanceRIB
+        # if entry['active_tag'] == '*':
+        #     active_tag = True
+        # else:
+        #     active_tag = False
+        related_rib_inst = InstanceRIB.objects.get(related_device_id=self.host, table_name=entry['table_name'])
+        model_inst =self.ModelClass.objects.get_or_create(related_device_id=self.host, related_rib= related_rib_inst,
+                                                          rt_destination_ip=entry['rt_destination_ip'],
+                                                          rt_destination_prefix=entry['rt_destination_prefix'],
+                                                          active_tag=entry['active_tag'])[0]
         return model_inst, None
 
     def _instancephyinterface_updater(self, entry):
@@ -166,9 +172,10 @@ if __name__ == '__main__':
 
         # print(facts)
         # print(inst)
-        print('ARP Table for {}: {}'.format(hostn, arp_t))
-        # print(route_t)
+        # print('ARP Table for {}: {}'.format(hostn, arp_t))
+        # print('Route Table for {}: {}'.format(hostn, route_t))
 
         facts_updater = ModelUpdater(facts, host=hostn).updater()
         instance_updater = ModelUpdater(instance, host=hostn).updater()
         arp_updater = ModelUpdater(arp_t, host=hostn).updater()
+        route_updater = ModelUpdater(route_t, host=hostn).updater()

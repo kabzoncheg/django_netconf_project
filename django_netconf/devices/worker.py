@@ -57,18 +57,10 @@ def update_model_device(device_ip, facts={}):
             device_object.save()
             logger.info('device {} changed state to DOWN'.format(device_ip))
             return
-        if device_object.name != facts['hostname']:
-            device_object.name = facts['hostname']
+
         if device_object.fqdn != facts['fqdn']:
             device_object.fqdn = facts['fqdn']
-        # if device_object.platform != facts['model']:
-        #     device_object.platform = facts['model']
-        # if device_object.software_version != facts['version']:
-        #     device_object.software_version = facts['version']
-        # if device_object.serial_number != facts['serialnumber']:
-        #     device_object.serial_number = facts['serialnumber']
-        if device_object.up_time != facts['RE0']['up_time']:
-            device_object.up_time = facts['RE0']['up_time']
+
         device_object.last_checked_status = True
         device_object.save()
         logger.info('fineshed updating model {}'.format(Device))
@@ -134,10 +126,11 @@ def device_updater(host_list, tables_to_update=()):
     for host in host_list:
         logger.info('Queuing in the thread_queue task for host {}'.format(host))
         thread_queue.put((host, tables_to_update))
+    # Waiting for a queue for task completion
     thread_queue.join()
     logger.info('Took {}'.format(time() - ts))
     print('Took {}'.format(time() - ts))
 
 if __name__ == '__main__':
-    hosts = ['10.0.1.1', '10.0.2.15']
+    hosts = ['10.0.1.1', '10.0.3.2']
     device_updater(hosts)

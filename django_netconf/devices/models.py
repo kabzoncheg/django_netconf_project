@@ -51,7 +51,7 @@ class InstanceRIB(models.Model):
     Represents RIBs for each routing instance.
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    related_instance = models.ForeignKey(DeviceInstance,on_delete=models.CASCADE)
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
     table_name = models.CharField(max_length=100, editable=False)
 
     class Meta:
@@ -75,6 +75,7 @@ class InstanceArpTable(models.Model):
 
     class Meta:
         unique_together = ('related_device', 'related_instance', 'mac_address')
+
 
 class InstanceRouteTable(models.Model):
     """
@@ -104,20 +105,20 @@ class InstancePhyInterface(models.Model):
     Represents device physical interfaces (stores info about them).
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False)
     admin_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
     oper_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
     speed = models.CharField(max_length=20, editable=False, blank=True)
     mtu = models.CharField(max_length=20, editable=False, blank=True)
     link_mode = models.CharField(max_length=20, editable=False, blank=True)
-    if_auto_negotiation = models.CharField(max_length=20, editable=False, blank=True)
+    if_auto_negotiation = models.CharField(max_length=20, editable=False, default=False)
     link_level_type = models.CharField(max_length=20, editable=False, blank=True)
     current_physical_address = models.CharField(max_length=34, editable=False, blank=True)
     hardware_physical_address = models.CharField(max_length=34, editable=False, blank=True)
 
     class Meta:
-        unique_together = ('related_device', 'related_rib', 'name')
+        unique_together = ('related_device', 'related_instance', 'name')
 
 
 class InstanceLogInterface(models.Model):
@@ -126,11 +127,11 @@ class InstanceLogInterface(models.Model):
     Represents device logical interfaces (stores info about them).
     """
     related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    related_rib = models.ForeignKey(InstanceRIB, on_delete=models.CASCADE)
+    related_instance = models.ForeignKey(DeviceInstance, on_delete=models.CASCADE)
     related_interface = models.ForeignKey(InstancePhyInterface, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, editable=False)
     address_family_name = models.CharField(max_length=50, editable=False, blank=True)
-    encapsulation =  models.CharField(max_length=20, editable=False, blank=True)
+    encapsulation = models.CharField(max_length=20, editable=False, blank=True)
     mtu = models.CharField(max_length=20, editable=False, blank=True)
     ifa_local = models.GenericIPAddressField(editable=False, blank=True, null=True)
     ifa_prefix = models.SmallIntegerField(editable=False,  blank=True, null=True)
@@ -140,7 +141,8 @@ class InstanceLogInterface(models.Model):
     logical_interface_zone_name = models.CharField(max_length=100, editable=False, blank=True)
 
     class Meta:
-        unique_together = ('related_device', 'related_rib', 'related_interface','name')
+        unique_together = ('related_device', 'related_instance', 'related_interface', 'name')
+
 
 def device_config_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/configs/device_<id>/filename

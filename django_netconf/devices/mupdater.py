@@ -100,24 +100,45 @@ class ModelUpdater:
         return model_inst, None
 
     def _instanceroutetable_updater(self, entry):
+        """
+        Creates instance of InstanceRouteTable model class.
+
+        :return: InstanceRouteTable instance, None
+        """
         from devices.models import InstanceRIB
-        # if entry['active_tag'] == '*':
-        #     active_tag = True
-        # else:
-        #     active_tag = False
         related_rib_inst = InstanceRIB.objects.get(related_device_id=self.host, table_name=entry['table_name'])
-        model_inst =self.ModelClass.objects.get_or_create(related_device_id=self.host, related_rib= related_rib_inst,
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host, related_rib= related_rib_inst,
                                                           rt_destination_ip=entry['rt_destination_ip'],
                                                           rt_destination_prefix=entry['rt_destination_prefix'],
                                                           active_tag=entry['active_tag'])[0]
         return model_inst, None
 
     def _instancephyinterface_updater(self, entry):
-        model_inst = self.ModelClass()
+        """
+        Creates instance of InstancePhyInterface model class.
+
+        :return: InstancePhyInterface instance, None
+        """
+        from devices.models import DeviceInstance
+        related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host,
+                                                           instance_name=entry['instance_name'])
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host, name=entry['name'],
+                                                           related_instance=related_instance_inst)[0]
         return model_inst, None
 
     def _instanceloginterface_updater(self, entry):
-        model_inst = self.ModelClass()
+        """
+        Creates instance of InstanceLogInterface model class.
+
+        :return: InstanceLogInterface instance, None
+        """
+        from devices.models import DeviceInstance, InstancePhyInterface
+        related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host,
+                                                           instance_name=entry['instance_name'])
+        related_phy_inst = InstancePhyInterface.objects.get(related_device_id=self.host, name=entry['parent_int_name'])
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host, name=entry['name'],
+                                                           related_instance=related_instance_inst,
+                                                           related_interface=related_phy_inst)[0]
         return model_inst, None
 
     def __init__(self, *args, **kwargs):
@@ -157,6 +178,7 @@ class ModelUpdater:
             django_setup()
 
 if __name__ == '__main__':
+    # TEMP. While normal tests not implemented
     from django_netconf.devices.jdevice import JunosDevice
     hosts_list = ['10.0.1.1', '10.0.3.2']
     for hostn in hosts_list:
@@ -171,11 +193,16 @@ if __name__ == '__main__':
         device.disconnect()
 
         # print(facts)
-        # print(inst)
+        # print('INSTANCE', instance)
         # print('ARP Table for {}: {}'.format(hostn, arp_t))
         # print('Route Table for {}: {}'.format(hostn, route_t))
+        # print('Physical interface for {}: {}'.format(hostn, int_p))
+        print('Logical interface for {}: {}'.format(hostn, int_l))
 
+        # Order of updating models is significant!!!
         facts_updater = ModelUpdater(facts, host=hostn).updater()
         instance_updater = ModelUpdater(instance, host=hostn).updater()
         arp_updater = ModelUpdater(arp_t, host=hostn).updater()
         route_updater = ModelUpdater(route_t, host=hostn).updater()
+        phy_updater = ModelUpdater(int_p, host=hostn).updater()
+        log_updater = ModelUpdater(int_l, host=hostn).updater()

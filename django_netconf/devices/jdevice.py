@@ -79,10 +79,7 @@ class JunosDevice:
                 entry['rt_destination_ip'], entry['rt_destination_prefix'] = entry['rt_destination'].split('/')
                 entry['rt_destination_prefix'] = int(entry['rt_destination_prefix'])
                 entry['table_name'] = table_name
-                if entry['active_tag'] == '*':
-                    entry['active_tag'] = True
-                else:
-                    entry['active_tag'] = False
+                entry['active_tag'] = True if entry['active_tag'] == '*' else False
                 table.append(entry)
         return table, model
 
@@ -99,9 +96,29 @@ class JunosDevice:
         root = self._connection.rpc.get_interface_information()
         for phy_int in root:
             entry = dict(
-                (elt.tag, elt.text.strip()) for elt in phy_int.findall('./') if not len(elt) and elt.text is not None)
-            entry['int-type'] = 'physical-interface'
+                (elt.tag.replace('-', '_'), elt.text.strip()) for elt in phy_int.findall('./')
+                if not len(elt) and elt.text is not None)
+            entry['int_type'] = 'physical-interface'
+            # For database normalization
+            entry['oper_status'] = True if entry['oper_status'] == 'up' else False
+            entry['admin_status'] = True if entry['admin_status'] == 'up' else False
             table.append(entry)
+
+        # Binding instance name to interface
+        route_instance = self.get_route_instance_list()[0]
+        int_to_inst = {}
+        for elt in route_instance:
+            if 'instance_interface_list' in elt:
+                entry = dict((int_name, elt['instance_name']) for int_name in elt['instance_interface_list'])
+                int_to_inst.update(entry)
+        for entry in table:
+            for elt in int_to_inst.keys():
+                if elt == entry['name']:
+                    entry['instance_name'] = int_to_inst[elt]
+                    break
+                else:
+                    entry['instance_name'] = 'master'
+
         return table, model
 
     @_CheckModel
@@ -116,19 +133,33 @@ class JunosDevice:
         table = []
         root = self._connection.rpc.get_interface_information()
         for phy_int in root:
+            parent_int_name = phy_int.findall('name')[0].text.strip('\n')
             for log_int in phy_int.findall('logical-interface'):
                 entry = dict(
-                    (elt.tag, elt.text.strip()) for elt in log_int.iter() if not len(elt) and elt.text is not None)
-                try:
-                    unparsed_prefix = entry['ifa-destination']
-                except KeyError:
-                    pass
+                    (elt.tag.replace('-', '_'), elt.text.strip()) for elt in log_int.iter()
+                    if not len(elt) and elt.text is not None)
+                if 'ifa_destination' in entry and entry['ifa_destination'].__contains__('/'):
+                    unparsed_prefix = entry['ifa_destination']
+                    entry['ifa_prefix'] = unparsed_prefix.split('/').pop()
+                entry['parent_int_name'] = parent_int_name
+                entry['admin_status'] = False if log_int.findall('*/iff-down') else True
+                table.append(entry)
+
+        # Binding instance name to interface
+        route_instance = self.get_route_instance_list()[0]
+        int_to_inst = {}
+        for elt in route_instance:
+            if 'instance_interface_list' in elt:
+                entry = dict((int_name, elt['instance_name']) for int_name in elt['instance_interface_list'])
+                int_to_inst.update(entry)
+        for entry in table:
+            for elt in int_to_inst.keys():
+                if elt == entry['name']:
+                    entry['instance_name'] = int_to_inst[elt]
+                    break
                 else:
-                    parsed_prefix = unparsed_prefix.split('/').pop()
-                    entry['ifa-prefix'] = parsed_prefix
-                finally:
-                    entry['int-type'] = 'logical-interface'
-                    table.append(entry)
+                    entry['instance_name'] = 'master'
+
         return table, model
 
     @_CheckModel
@@ -147,10 +178,12 @@ class JunosDevice:
             for elt in route_inst.findall('*'):
                 if not len(elt):
                     entry[elt.tag.replace('-', '_')] = elt.text
-                if elt.tag == 'instance-interface':
-                    entry['instance_interface_list'] = list(int_elt.text for int_elt in elt)
-                if elt.tag == 'instance-rib':
-                    entry['instance_rib_list'] = list(rib_elt.text for rib_elt in elt if rib_elt.tag == 'irib-name')
+            entry['instance_interface_list'] = []
+            entry['instance_rib_list'] = []
+            for int_name in route_inst.iter('interface-name'):
+                entry['instance_interface_list'].append(int_name.text)
+            for int_name in route_inst.iter('irib-name'):
+                entry['instance_rib_list'].append(int_name.text)
             table.append(entry)
         return table, model
 
@@ -161,7 +194,7 @@ class JunosDevice:
         :return: dict with Device facts
         """
         model = 'Device'
-        table =[]
+        table = []
         self._facts['last_checked_status'] = True
         table.append(self._facts)
         return table, model
@@ -208,6 +241,7 @@ class JunosDevice:
             self._connection.close()
 
 if __name__ == '__main__':
+    # TEMP. While normal tests not implemented
     device = JunosDevice(host='10.0.1.1', password='Password12!', user='django', db_flag=True)
     device.connect()
     facts = device.get_facts()
@@ -217,8 +251,9 @@ if __name__ == '__main__':
     int_l = device.get_log_interface_list()
     int_p = device.get_phy_interface_list()
     device.disconnect()
-    # print(arp_t)
-    # print(facts)
-    # print(inst)
-    # print(int_l)
-    # print(int_p)
+
+    print(arp_t)
+    print(facts)
+    print(inst)
+    print(int_l)
+    print(int_p)

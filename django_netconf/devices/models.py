@@ -1,9 +1,43 @@
-import uuid
-
 from django.db import models
 
 
-class Device (models.Model):
+class Parent(models.Model):
+    def compare(self, obj):
+        # Possible to overload  excluded_keys for each Child class
+        excluded_keys = '_state'
+        return self._compare(self, obj, excluded_keys)
+
+    def _compare(self, obj1, obj2, excluded_keys):
+        """
+        FOR FUTURE USE!
+        Compares two instances of same class
+
+        :param obj1: class instance 1
+        :param obj2: class instance 2
+        :param excluded_keys: model fields to exclude, when comparing
+        :return: True if equal else Tuple with difference in Dictionaries
+        """
+        d1, d2 = obj1.__dict__, obj2.__dict__
+        old, new = {}, {}
+        for k, v in d1.items():
+            if k in excluded_keys:
+                continue
+            try:
+                if v != d2[k]:
+                    old.update({k: v})
+                    new.update({k: d2[k]})
+            except KeyError:
+                old.update({k: v})
+        if old == new == {}:
+            return True
+        else:
+            return old, new
+
+        class Meta:
+            abstract = True
+
+
+class Device (Parent):
     """
     Device class.
     Represents network device.
@@ -30,7 +64,7 @@ class Device (models.Model):
     last_checked_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
 
 
-class DeviceInstance(models.Model):
+class DeviceInstance(Parent):
     """
     DeviceInstance class.
     Represents devices routing instance.
@@ -45,7 +79,7 @@ class DeviceInstance(models.Model):
         unique_together = ('related_device', 'instance_name')
 
 
-class InstanceRIB(models.Model):
+class InstanceRIB(Parent):
     """
     InstanceRIB class.
     Represents RIBs for each routing instance.
@@ -58,7 +92,7 @@ class InstanceRIB(models.Model):
         unique_together = ('related_device', 'related_instance', 'table_name')
 
 
-class InstanceArpTable(models.Model):
+class InstanceArpTable(Parent):
     """
     InstanceArptable class.
     Represents device arp table.
@@ -77,7 +111,7 @@ class InstanceArpTable(models.Model):
         unique_together = ('related_device', 'related_instance', 'mac_address')
 
 
-class InstanceRouteTable(models.Model):
+class InstanceRouteTable(Parent):
     """
     InstanceRouteTable class.
     Represents device route table.
@@ -99,7 +133,7 @@ class InstanceRouteTable(models.Model):
                            'rt_destination_prefix')
 
 
-class InstancePhyInterface(models.Model):
+class InstancePhyInterface(Parent):
     """
     InstanceInterface class.
     Represents device physical interfaces (stores info about them).
@@ -121,7 +155,7 @@ class InstancePhyInterface(models.Model):
         unique_together = ('related_device', 'related_instance', 'name')
 
 
-class InstanceLogInterface(models.Model):
+class InstanceLogInterface(Parent):
     """
     InstanceInterface class.
     Represents device logical interfaces (stores info about them).
@@ -149,7 +183,7 @@ def device_config_path(instance, filename):
     return 'configs/device_{0}/{1}'.format(instance.related_device_id, filename)
 
 
-class DeviceConfig (models.Model):
+class DeviceConfig (Parent):
     """
     Device Configuration class.
     Represents configuration files for each device

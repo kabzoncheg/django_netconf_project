@@ -1,3 +1,4 @@
+# TO DO: Error handling
 import os
 
 from jnpr.junos import Device
@@ -105,7 +106,7 @@ class JunosDevice:
             table.append(entry)
 
         # Binding instance name to interface
-        route_instance = self.get_route_instance_list()[0]
+        route_instance = self.get_route_instance_list()[0] if self.db_flag else self.get_route_instance_list()
         int_to_inst = {}
         for elt in route_instance:
             if 'instance_interface_list' in elt:
@@ -188,6 +189,24 @@ class JunosDevice:
         return table, model
 
     @_CheckModel
+    def get_instance_rib_list(self):
+        """
+        A list of routing instances RIB names
+
+        :returns: list of routing instances RIB names
+        :rtype: list
+        """
+        model = 'InstanceRIB'
+        table = []
+        route_instance = self.get_route_instance_list()[0] if self.db_flag else self.get_route_instance_list()
+        for elt in route_instance:
+            while elt['instance_rib_list']:
+                entry = {elt['instance_name']:elt['instance_rib_list'].pop()}
+                table.append(entry)
+
+        return table, model
+
+    @_CheckModel
     def get_facts(self):
         """
         device
@@ -246,14 +265,16 @@ if __name__ == '__main__':
     device.connect()
     facts = device.get_facts()
     inst = device.get_route_instance_list()
+    inst_rib = device.get_instance_rib_list()
     arp_t = device.get_arp_table()
     route_t = device.get_route_table()
     int_l = device.get_log_interface_list()
     int_p = device.get_phy_interface_list()
     device.disconnect()
 
-    print(arp_t)
-    print(facts)
+    # print(arp_t)
+    # print(facts)
     print(inst)
-    print(int_l)
-    print(int_p)
+    print(inst_rib)
+    # print(int_l)
+    # print(int_p)

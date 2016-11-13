@@ -1,3 +1,5 @@
+# TO DO: Error handling
+
 import os
 import sys
 
@@ -26,25 +28,41 @@ class ModelUpdater:
 
         Some Django models cannot be updated before another, for example DeviceInstance cannot
             be updated if related Device entry does not exist! Handling this is purpose of
-            another models (worker.py)
+            another modules (worker.py)
 
         :return: True or error
         """
+        if self.model_name != 'Device':
+            old_db_snapshot = self.ModelClass.objects.filter(related_device_id=self.host)
+        instances_to_save_snapshot = []
         for entry in self.data:
             updater_name = '_' + self.model_name.lower() + '_updater'
             if updater_name in ModelUpdater.__dict__:
-                model_inst, cascade_model_inst = getattr(ModelUpdater, updater_name)(self, entry=entry)
+                model_inst = getattr(self, updater_name)(entry=entry)
             else:
                 model_inst = self.ModelClass()
-                cascade_model_inst = None
             for key in model_inst.__dict__.keys():
                 if key in entry.keys():
                     setattr(model_inst, key, entry[key])
+            instances_to_save_snapshot.append(model_inst)
             model_inst.save()
-            if cascade_model_inst:
-                for inst in cascade_model_inst:
-                    inst.save()
+        if self.model_name != 'Device' and old_db_snapshot:
+            self._cleaner(old_db=old_db_snapshot, new_db=instances_to_save_snapshot)
         return True
+
+    def _cleaner(self, old_db, new_db):
+        """
+        Deletes entries from database table, that are not passed with latest updates,
+        e.g outdated entries (info about old routes, deleted interfaces, etc.)
+
+        :param old_db: outdated entries in DB to check
+        :param new_db: latest entries to be written in DB
+        :return: None
+        """
+        for old_obj in old_db:
+            if not old_obj in new_db:
+                old_obj.delete()
+
 
     def _device_updater(self, entry):
         """
@@ -59,7 +77,7 @@ class ModelUpdater:
             if key.startswith('RE'):
                 up_time.append(entry[key]['up_time'])
         setattr(model_inst, 'up_time', max(up_time))
-        return model_inst, None
+        return model_inst
 
     def _deviceinstance_updater(self, entry):
         """
@@ -72,14 +90,15 @@ class ModelUpdater:
         #   if it is used, instance of Device class should be passed as parameter
         model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host,
                                                            instance_name=entry['instance_name'])[0]
-        cascade_model_inst = []
-        if 'instance_rib_list' in entry:
-            from devices.models import InstanceRIB
-            for rib in entry['instance_rib_list']:
-                rib_inst = InstanceRIB.objects.get_or_create(related_device_id=self.host,
-                                                             related_instance=model_inst, table_name=rib)[0]
-                cascade_model_inst.append(rib_inst)
-        return model_inst, cascade_model_inst
+        return model_inst
+
+    def _instancerib_updater(self, entry):
+        from devices.models import DeviceInstance
+        related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host, instance_name=list(entry)[0])
+        model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host,
+                                                           related_instance=related_instance_inst,
+                                                           table_name=list(entry.values())[0])[0]
+        return model_inst
 
     def _instancearptable_updater(self, entry):
         """
@@ -97,7 +116,7 @@ class ModelUpdater:
         model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host,
                                                            related_instance=related_instance_inst,
                                                            mac_address=entry['mac_address'])[0]
-        return model_inst, None
+        return model_inst
 
     def _instanceroutetable_updater(self, entry):
         """
@@ -111,7 +130,7 @@ class ModelUpdater:
                                                           rt_destination_ip=entry['rt_destination_ip'],
                                                           rt_destination_prefix=entry['rt_destination_prefix'],
                                                           active_tag=entry['active_tag'])[0]
-        return model_inst, None
+        return model_inst
 
     def _instancephyinterface_updater(self, entry):
         """
@@ -124,7 +143,7 @@ class ModelUpdater:
                                                            instance_name=entry['instance_name'])
         model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host, name=entry['name'],
                                                            related_instance=related_instance_inst)[0]
-        return model_inst, None
+        return model_inst
 
     def _instanceloginterface_updater(self, entry):
         """
@@ -139,7 +158,7 @@ class ModelUpdater:
         model_inst = self.ModelClass.objects.get_or_create(related_device_id=self.host, name=entry['name'],
                                                            related_instance=related_instance_inst,
                                                            related_interface=related_phy_inst)[0]
-        return model_inst, None
+        return model_inst
 
     def __init__(self, *args, **kwargs):
         """
@@ -186,6 +205,7 @@ if __name__ == '__main__':
         device.connect()
         facts = device.get_facts()
         instance = device.get_route_instance_list()
+        inst_rib = device.get_instance_rib_list()
         arp_t = device.get_arp_table()
         route_t = device.get_route_table()
         int_l = device.get_log_interface_list()
@@ -194,14 +214,16 @@ if __name__ == '__main__':
 
         # print(facts)
         # print('INSTANCE', instance)
+        # print('INSTANCE RIB:', inst_rib)
         # print('ARP Table for {}: {}'.format(hostn, arp_t))
         # print('Route Table for {}: {}'.format(hostn, route_t))
         # print('Physical interface for {}: {}'.format(hostn, int_p))
-        print('Logical interface for {}: {}'.format(hostn, int_l))
+        # print('Logical interface for {}: {}'.format(hostn, int_l))
 
         # Order of updating models is significant!!!
         facts_updater = ModelUpdater(facts, host=hostn).updater()
         instance_updater = ModelUpdater(instance, host=hostn).updater()
+        instance_rib_updater = ModelUpdater(inst_rib, host=hostn).updater()
         arp_updater = ModelUpdater(arp_t, host=hostn).updater()
         route_updater = ModelUpdater(route_t, host=hostn).updater()
         phy_updater = ModelUpdater(int_p, host=hostn).updater()

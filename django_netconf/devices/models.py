@@ -53,6 +53,7 @@ class Device (Parent):
     """
     ip_address = models.GenericIPAddressField('Devices management IP-address:', primary_key=True,)
     description = models.CharField('Device description', max_length=300, blank=True)
+    poll_flag = models.BooleanField('True for regularly polling this device', default=True)
     hostname = models.CharField('Device name:', max_length=63, blank=True, editable=False)
     fqdn = models.CharField('Device FQDN:', max_length=63, blank=True)
     model = models.CharField('Device hardware model:', max_length=50, blank=True, editable=False)

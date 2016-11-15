@@ -1,4 +1,4 @@
-# TO DO: Error handling
+# TO DO: Error handling, Tests
 
 import os
 import sys
@@ -50,7 +50,8 @@ class ModelUpdater:
             self._cleaner(old_db=old_db_snapshot, new_db=instances_to_save_snapshot)
         return True
 
-    def _cleaner(self, old_db, new_db):
+    @staticmethod
+    def _cleaner(old_db, new_db):
         """
         Deletes entries from database table, that are not passed with latest updates,
         e.g outdated entries (info about old routes, deleted interfaces, etc.)
@@ -63,20 +64,19 @@ class ModelUpdater:
             if not old_obj in new_db:
                 old_obj.delete()
 
-
     def _device_updater(self, entry):
         """
         Creates instance of Device model class.
 
         :return: Device instance, None
         """
-        model_inst = self.ModelClass()
-        setattr(model_inst, 'ip_address', self.host)
+        model_inst = self.ModelClass.objects.get_or_create(ip_address=self.host)[0]
         up_time = []
         for key in entry.keys():
             if key.startswith('RE'):
                 up_time.append(entry[key]['up_time'])
-        setattr(model_inst, 'up_time', max(up_time))
+        if up_time:
+            setattr(model_inst, 'up_time', max(up_time))
         return model_inst
 
     def _deviceinstance_updater(self, entry):
@@ -228,3 +228,5 @@ if __name__ == '__main__':
         route_updater = ModelUpdater(route_t, host=hostn).updater()
         phy_updater = ModelUpdater(int_p, host=hostn).updater()
         log_updater = ModelUpdater(int_l, host=hostn).updater()
+
+

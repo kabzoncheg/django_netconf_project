@@ -1,3 +1,7 @@
+# TO DO: Implement signal handling ofr dynamic settings (django-constance),
+#       Callbacks for threads!
+#       Tests, Normal Error handling
+
 import os
 import sys
 import logging
@@ -5,65 +9,28 @@ from time import time
 from queue import Queue
 from threading import Thread
 
-from django import setup as django_setup
+from django_netconf.devices.jdevice import JunosDevice
+from django_netconf.devices.mupdater import ModelUpdater
 from django.core.management import settings
-from django.core.exceptions import ObjectDoesNotExist
-from jnpr.junos import Device as device_connector
+from django import setup as django_setup
+from constance import config
 
-# In case this module run outside of django
-if not settings.configured:
-    # Adding django_netconf project to sys.path (PATH)
-    project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.append(project_path)
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_netconf.config.settings')
-    django_setup()
 
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-def get_env_variable(var_name):
+def _settings_setter():
     """
-    Get the environment variable or return exception
+    Adds django_netconf project to sys.path (PATH) if it is not already there
+
+    :return: None
     """
-    try:
-        return os.environ[var_name]
-    except KeyError:
-        _error_msg = "Set the {} environment variable!".format(var_name)
-        logger.error(_error_msg)
-        raise Exception(_error_msg)
-
-
-def update_model_device(device_ip, facts={}):
-    """
-    Update Device model with passed facts
-    :param device_ip: IP address of Device. CHECK!!! hostname could be passed!!!!
-    :param facts: device facts passed as dictionary
-    """
-    # HERE is relative import issue, beware!
-    # Doesn't work from django_netconf.devices.models import Device.
-    # Possibly it is a django bug
-    from devices.models import Device
-
-    try:
-        device_object = Device.objects.get(ip_address=device_ip)
-    except ObjectDoesNotExist:
-        logger.error('There is no device with IP {} in database!'.format(device_ip))
-    else:
-
-        # TEMPRORARY UGLY IMPLEMENTATION:
-        if facts == {}:
-            device_object.last_checked_status = 'DOWN'
-            device_object.save()
-            logger.info('device {} changed state to DOWN'.format(device_ip))
-            return
-
-        if device_object.fqdn != facts['fqdn']:
-            device_object.fqdn = facts['fqdn']
-
-        device_object.last_checked_status = True
-        device_object.save()
-        logger.info('fineshed updating model {}'.format(Device))
+    if not settings.configured:
+        project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sys.path.append(project_path)
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_netconf.config.settings')
+        django_setup()
 
 
 class DeviceThreadWorker(Thread):
@@ -73,51 +40,48 @@ class DeviceThreadWorker(Thread):
     """
     def __init__(self, thread_queue):
         Thread.__init__(self)
-        self._thread_queue = thread_queue
+        self.thread_queue = thread_queue
 
     def run(self):
         while True:
-            # Get hostname or IP-address from the thread_queue and connect to Device
-            _host, _tables_to_update = self._thread_queue.get()
-            _user = get_env_variable('JNPR_USR')
-            _password = get_env_variable('JNPR_PWD')
-            _dev = device_connector(host=_host, user=_user, passwd=_password)
-
+            # Get IP-address from the thread_queue and connect to Device
+            host = self.thread_queue.get()
+            usr = config.DEVICE_USER
+            pwd = config.DEVICE_PWD
+            timeout = config.CONN_TIMEOUT
+            dev = JunosDevice(host=host, user=usr, password=pwd, db_flag=True, auto_probe=timeout)
             try:
-                _dev.open()
-            except Exception as _err:
-                logger.error('Cannot connet to device {}, error occured: {}'.format(_host, _err))
-                update_model_device(_host, facts={})
-
-                # Necessary Models update operations performed here
+                dev.connect()
+            except Exception as err:
+                logger.error('Cannot connet to device {}, error occured: {}'.format(host, err))
+                data = ([{'last_checked_status': False}], 'Device')
+                ModelUpdater(data, host=host).updater()
             else:
-                if 'arp-table' in _tables_to_update:
-                    # TO MAKE: get-arp-table-information
-                    pass
-                if 'int-info' in _tables_to_update:
-                    # TO MAKE; get-interface-information
-                    pass
-                if 'route-info' in _tables_to_update:
-                    # TO MAKE: get-route-inforamtion
-                    pass
-                _facts = _dev.facts
-                update_model_device(_host, _facts)
-                _dev.close()
+                # It is possible to get KeyError here if meth_tuple improperly configured
+                # in jdevice.py, so it will kill worker.py, as planned
+                junos_dev_meth_names = dev.all_get_methods()
+                for meth_name in junos_dev_meth_names:
+                    data = getattr(dev, meth_name)()
+                    try:
+                        ModelUpdater(data, host=host).updater()
+                    except Exception as err:
+                        logger.error('Cannot update ModelUpdater instance for host {} with data{}'
+                                     'thread exited with {}'.format(host, data, err))
+                dev.disconnect()
             finally:
-                self._thread_queue.task_done()
+                self.thread_queue.task_done()
 
 
-def device_updater(host_list, tables_to_update=()):
+def device_updater(host_list):
     """
     :param host_list: Must be a list of strings, containing IP-addresses! IMPLEMENT CHECK!
-    :param tables_to_update: must be a tuple of strings with names of tables! IMPLEMENT CHECK!
     :return: None
     """
+    _settings_setter()
     ts = time()
-    thread_number = int(get_env_variable('THRD_NUM'))
 
     thread_queue = Queue()
-    for x in range(thread_number):
+    for num in range(config.THREAD_NUM):
         worker = DeviceThreadWorker(thread_queue)
         # Setting daemon to true will let the main thred exit even if workers are blocking
         worker.daemon = True
@@ -125,12 +89,17 @@ def device_updater(host_list, tables_to_update=()):
 
     for host in host_list:
         logger.info('Queuing in the thread_queue task for host {}'.format(host))
-        thread_queue.put((host, tables_to_update))
+        thread_queue.put(host)
     # Waiting for a queue for task completion
     thread_queue.join()
     logger.info('Took {}'.format(time() - ts))
     print('Took {}'.format(time() - ts))
 
 if __name__ == '__main__':
-    hosts = ['10.0.1.1', '10.0.3.2']
-    device_updater(hosts)
+    real_hosts = ['10.0.1.1', '10.0.3.2']
+    fake_hosts = []
+    for x in range(1, 50):
+        entry = '10.192.172.' + str(x)
+        fake_hosts.append(entry)
+    hosts = real_hosts + fake_hosts
+    device_updater(fake_hosts)

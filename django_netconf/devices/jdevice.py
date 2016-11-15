@@ -1,5 +1,6 @@
-# TO DO: Error handling
+# TO DO: Error handling; Tests
 import os
+import re
 
 from jnpr.junos import Device
 
@@ -246,9 +247,33 @@ class JunosDevice:
         self.password = kwargs.get('password')
         self.timeout = kwargs.get('timeout')
         self.db_flag = kwargs.get('db_flag', False)
+        self.auto_probe = kwargs.get('auto_probe', 0)
+
+    @classmethod
+    def all_get_methods(cls):
+        """
+        Returns tuple with correct order of get_methods names.
+        It can be used later by worker.py module
+
+        :return: tuple
+        """
+        meth_tuple=('get_facts', 'get_route_instance_list', 'get_instance_rib_list',
+                    'get_arp_table', 'get_phy_interface_list', 'get_log_interface_list',
+                    'get_route_table')
+        for key in cls.__dict__.keys():
+            if re.match('^get_', key):
+                if key not in meth_tuple:
+                    err_text = '{} class get-method name {} ' \
+                               'is not in meth_tuple: {}'.format(cls.__name__, key, meth_tuple)
+                    raise KeyError(err_text)
+        for key in meth_tuple:
+            if key not in cls.__dict__.keys():
+                err_text = 'meth_tuple contains bogus {} class get-method name {}'.format(cls.__name__, key)
+                raise KeyError(err_text)
+        return meth_tuple
 
     def connect(self):
-        dev = Device(host=self.hostname, user=self.user, passwd=self.password)
+        dev = Device(host=self.hostname, user=self.user, passwd=self.password, auto_probe=self.auto_probe)
         dev.open()
         dev.timeout = self.timeout
         self._connection = dev
@@ -261,7 +286,7 @@ class JunosDevice:
 
 if __name__ == '__main__':
     # TEMP. While normal tests not implemented
-    device = JunosDevice(host='10.0.1.1', password='Password12!', user='django', db_flag=True)
+    device = JunosDevice(host='10.0.1.1', password='Password12!', user='django', db_flag=True, auto_probe=5)
     device.connect()
     facts = device.get_facts()
     inst = device.get_route_instance_list()
@@ -270,11 +295,13 @@ if __name__ == '__main__':
     route_t = device.get_route_table()
     int_l = device.get_log_interface_list()
     int_p = device.get_phy_interface_list()
+    all_methods = device.all_get_methods()
     device.disconnect()
 
     # print(arp_t)
     # print(facts)
-    print(inst)
-    print(inst_rib)
+    # print(inst)
+    # print(inst_rib)
     # print(int_l)
     # print(int_p)
+    # print(all_methods)

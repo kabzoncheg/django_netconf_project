@@ -21,7 +21,7 @@ def get_env_variable(var_name):
         return os.environ[var_name]
     except KeyError:
         error_msg = "Set the {} environment variable".format(var_name)
-        raise ImproperlyConfigured
+        raise ImproperlyConfigured(error_msg)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,6 +51,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'constance',
+    'constance.backends.database',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +141,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Constance config
+# More here: https://django-constance.readthedocs.io/en/latest/#
+
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+CONSTANCE_IGNORE_ADMIN_VERSION_CHECK = True # Check what it does!
+
+CONSTANCE_CONFIG = {
+    'DEVICE_USER': (get_env_variable('JNPR_USR'), 'default username to access too Juniper devices', str),
+    'DEVICE_PWD': (get_env_variable('JNPR_PWD'), 'default password to access too Juniper devices', str),
+    'POLL_TIME': (300, 'default time for device polling', int),
+    'CONN_TIMEOUT': (5, 'default timeout for connecting to device', int),
+    # Carefull with this number. Should be properly tested upon system configuration
+    'THREAD_NUM': (100, 'default thread number for workers', int),
+}

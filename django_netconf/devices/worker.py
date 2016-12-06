@@ -1,25 +1,28 @@
-# TO DO: Implement signal handling ofr dynamic settings (django-constance),
-#       Callbacks for threads!
-#       Tests, Normal Error handling
+# TO DO: Implement signal handling for dynamic settings (django-constance),
+#       Implement Tests,
+#       Implement Normal Error handling (error codes),
+#       Demonize this module
 
+import json
+import logging
 import os
 import sys
-import logging
-# from time import time
+
+import pika
 import ipaddress
 from queue import Queue
 from threading import Thread, Lock
 
-from django_netconf.devices.jdevice import JunosDevice
-from django_netconf.devices.mupdater import ModelUpdater
 from django.core.management import settings
 from django import setup as django_setup
 from constance import config
 
+from django_netconf.devices.jdevice import JunosDevice
+from django_netconf.devices.mupdater import ModelUpdater
+
 
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-task_counter = callback_counter = 0
 
 
 def _settings_setter():
@@ -39,13 +42,13 @@ class DeviceThreadWorker(Thread):
     DeviceThreadworker class
     Provides multithreading support for multiple SSH-agents
     """
-    def __init__(self, thread_queue, lock, callback, errback):
+    def __init__(self, thread_queue, lock, callback):
         Thread.__init__(self)
         self.thread_queue = thread_queue
         self.lock = lock
         self.callback = callback
-        self.errback = errback
         self.err = None
+        self.status_code = 0
 
     def run(self):
         while True:
@@ -73,59 +76,53 @@ class DeviceThreadWorker(Thread):
                 dev.disconnect()
             finally:
                 self.lock.acquire()
-                if self.err:
-                    self.errback(host, self.err)
-                else:
-                    self.callback(host)
+                self.callback(host, self.status_code, self.err)
                 self.lock.release()
                 self.thread_queue.task_done()
 
-
-def callback(host):
-    global callback_counter
-    callback_counter += 1
-    logger.info('Update successfull for host {}'.format(host))
-
-
-def errback(host, err):
-    global callback_counter
-    callback_counter += 1
-    logger.error('Cannot update host {}, error occured: {}'.format(host, err))
+def callback(host, status_code, err=None):
+    if not err:
+        logger.info('Update successfull for host {}'.format(host))
+    else:
+        logger.error('Cannot update host {}, error occured: {}'.format(host, err))
 
 
-def device_updater():
-    """
-    Testing with user input. Next step - RabitMq
-    :param host_list: Must be a list of strings, containing IP-addresses! IMPLEMENT CHECK!
-    :return: None
-    """
-    _settings_setter()
+_settings_setter()
 
-    thread_queue = Queue()
-    lock = Lock()
-    for num in range(config.THREAD_NUM):
-        worker = DeviceThreadWorker(thread_queue, lock, callback, errback)
-        # Setting daemon to True will let the main thread exit even if workers are blocking
-        worker.daemon = True
-        worker.start()
+# Set up connection to RabbitMQ server and queue declaration
+mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+mq_channel = mq_connection.channel()
+mq_channel.queue_declare(queue='db_update', durable=True, arguments={'x-message-ttl': 60000})
 
-    while True:
-        host = input('Enter IP-address:')
-        try:
-            ipaddress.ip_address(host)
-        except ValueError as err:
-            logger.error(err)
-        else:
-            logger.info('Queuing in the thread_queue task for host {}'.format(host))
-            thread_queue.put(host)
+thread_queue = Queue()
+lock = Lock()
+
+for num in range(config.THREAD_NUM):
+    worker = DeviceThreadWorker(thread_queue, lock, callback)
+    # Setting daemon to True will let the main thread exit even if workers are blocking
+    worker.daemon = True
+    worker.start()
 
 
-if __name__ == '__main__':
-    # real_hosts = ['10.0.1.1', '10.0.3.2']
-    # fake_hosts = []
-    # for x in range(1, 10):
-    #     entry = '10.192.172.' + str(x)
-    #     fake_hosts.append(entry)
-    # hosts = real_hosts + fake_hosts
-    # device_updater(hosts)
-    device_updater()
+def mq_method(channel, method, properties, body):
+    # Strange, recieving json string from RabbitMQ queue as bytes
+    # Possible it is a bug
+    if isinstance(body,bytes):
+        json_data = body.decode('utf-8')
+    else:
+        json_data = body
+    try:
+        # Each of the statements below could drop one or serveral errors
+        # For example ipaddress.ip_address(host) could drop ValueError if ip-address is not correct
+        # For future work
+        data = json.loads(json_data)
+        host = data['db_update']['host']
+        ipaddress.ip_address(host)
+    except Exception as err:
+        logger.error('Unable to parse data: {}, got Exception: {}'.format(data, err))
+    else:
+        logger.info('Queuing in the thread_queue task for host {}'.format(host))
+        thread_queue.put(host)
+
+mq_channel.basic_consume(mq_method, queue='db_update', no_ack=True)
+mq_channel.start_consuming()

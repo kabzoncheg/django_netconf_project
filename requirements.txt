@@ -1,2 +1,4 @@
 Django>=1.10.3
 junos-eznc>=2.0.0
+pika
+django-constance

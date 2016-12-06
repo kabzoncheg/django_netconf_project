@@ -48,12 +48,13 @@ class DeviceThreadWorker(Thread):
         self.lock = lock
         self.callback = callback
         self.err = None
+        # status_code - for future use
         self.status_code = 0
 
     def run(self):
         while True:
             # Get IP-address from the thread_queue and connect to Device
-            host = self.thread_queue.get()
+            host, mq_chan, mq_prop = self.thread_queue.get()
             usr = config.DEVICE_USER
             pwd = config.DEVICE_PWD
             timeout = config.CONN_TIMEOUT
@@ -76,11 +77,16 @@ class DeviceThreadWorker(Thread):
                 dev.disconnect()
             finally:
                 self.lock.acquire()
-                self.callback(host, self.status_code, self.err)
+                self.callback(host, self.status_code, mq_chan, mq_prop, self.err)
                 self.lock.release()
                 self.thread_queue.task_done()
 
-def callback(host, status_code, err=None):
+
+def callback(host, status_code, mq_chan, mq_prop, err=None):
+    response = json.dumps({'host': host, 'status_code': status_code})
+    if mq_prop.reply_to and mq_prop.correlation_id:
+        mq_chan.basic_publish(exchange='', routing_key=mq_prop.reply_to,
+                         properties=pika.BasicProperties(correlation_id=mq_prop.correlation_id), body=response)
     if not err:
         logger.info('Update successfull for host {}'.format(host))
     else:
@@ -107,7 +113,7 @@ for num in range(config.THREAD_NUM):
 def mq_method(channel, method, properties, body):
     # Strange, recieving json string from RabbitMQ queue as bytes
     # Possible it is a bug
-    if isinstance(body,bytes):
+    if isinstance(body, bytes):
         json_data = body.decode('utf-8')
     else:
         json_data = body
@@ -119,10 +125,11 @@ def mq_method(channel, method, properties, body):
         host = data['db_update']['host']
         ipaddress.ip_address(host)
     except Exception as err:
-        logger.error('Unable to parse data: {}, got Exception: {}'.format(data, err))
+        logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
         logger.info('Queuing in the thread_queue task for host {}'.format(host))
-        thread_queue.put(host)
+        thread_queue.put((host, channel, properties))
+        #print(channel)
 
 mq_channel.basic_consume(mq_method, queue='db_update', no_ack=True)
 mq_channel.start_consuming()

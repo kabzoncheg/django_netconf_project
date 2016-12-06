@@ -86,7 +86,7 @@ def callback(host, status_code, mq_chan, mq_prop, err=None):
     response = json.dumps({'host': host, 'status_code': status_code})
     if mq_prop.reply_to and mq_prop.correlation_id:
         mq_chan.basic_publish(exchange='', routing_key=mq_prop.reply_to,
-                         properties=pika.BasicProperties(correlation_id=mq_prop.correlation_id), body=response)
+                              properties=pika.BasicProperties(correlation_id=mq_prop.correlation_id), body=response)
     if not err:
         logger.info('Update successfull for host {}'.format(host))
     else:
@@ -129,7 +129,6 @@ def mq_method(channel, method, properties, body):
     else:
         logger.info('Queuing in the thread_queue task for host {}'.format(host))
         thread_queue.put((host, channel, properties))
-        #print(channel)
 
 mq_channel.basic_consume(mq_method, queue='db_update', no_ack=True)
 mq_channel.start_consuming()

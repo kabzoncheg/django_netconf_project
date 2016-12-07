@@ -1,10 +1,6 @@
 # TO DO: Error handling, Tests
 
-import os
-import sys
-
-from django import setup as django_setup
-from django.core.management import settings
+from django_netconf.common.setsettings import set_settings
 
 
 class ModelUpdater:
@@ -61,7 +57,7 @@ class ModelUpdater:
         :return: None
         """
         for old_obj in old_db:
-            if not old_obj in new_db:
+            if old_obj not in new_db:
                 old_obj.delete()
 
     def _device_updater(self, entry):
@@ -178,23 +174,10 @@ class ModelUpdater:
         self.model_name = args[0][1]
         self.host = kwargs.get('host')
         # configure Django settings and import model class
-        self._settings_setter()
+        set_settings()
         mod = __import__('devices.models', fromlist=[self.model_name])
         self.ModelClass = getattr(mod, self.model_name)
 
-    @staticmethod
-    def _settings_setter():
-        """
-        Staticmethod.
-        Adds django_netconf project to sys.path (PATH) if it is not already there
-
-        :return: None
-        """
-        if not settings.configured:
-            project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            sys.path.append(project_path)
-            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_netconf.config.settings')
-            django_setup()
 
 if __name__ == '__main__':
     # TEMP. While normal tests not implemented
@@ -228,5 +211,3 @@ if __name__ == '__main__':
         route_updater = ModelUpdater(route_t, host=hostn).updater()
         phy_updater = ModelUpdater(int_p, host=hostn).updater()
         log_updater = ModelUpdater(int_l, host=hostn).updater()
-
-

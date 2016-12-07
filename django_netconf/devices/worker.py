@@ -90,7 +90,7 @@ lock = Lock()
 
 for num in range(config.THREAD_NUM):
     worker = DeviceThreadWorker(thread_queue, lock, callback)
-    # Setting daemon to True will let the main thread exit even if workers are blocking
+    # Setting worker.daemon to True will let the main thread exit even if workers are blocking
     worker.daemon = True
     worker.start()
 

@@ -54,7 +54,6 @@ class ModelUpdater:
 
         :param old_db: outdated entries in DB to check
         :param new_db: latest entries to be written in DB
-        :return: None
         """
         for old_obj in old_db:
             if old_obj not in new_db:
@@ -64,7 +63,7 @@ class ModelUpdater:
         """
         Creates instance of Device model class.
 
-        :return: Device instance, None
+        :return: Device instance
         """
         model_inst = self.ModelClass.objects.get_or_create(ip_address=self.host)[0]
         up_time = []
@@ -80,7 +79,7 @@ class ModelUpdater:
         Creates instance of DeviceInstance model class;
         Creates instances of InstanceRIB model class.
 
-        :return: DeviceInstance instance, list of InstanceRIB instances
+        :return: DeviceInstance instance
         """
         # related_device_id - is a Django 'magic'. Model argument is related_devices,
         #   if it is used, instance of Device class should be passed as parameter
@@ -100,7 +99,7 @@ class ModelUpdater:
         """
         Creates instance of InstanceArpTable model class.
 
-        :return: InstanceArpTable instance, None
+        :return: InstanceArpTable instance
         """
         from devices.models import DeviceInstance
         if entry['vpn'] == 'default':
@@ -118,7 +117,7 @@ class ModelUpdater:
         """
         Creates instance of InstanceRouteTable model class.
 
-        :return: InstanceRouteTable instance, None
+        :return: InstanceRouteTable instance
         """
         from devices.models import InstanceRIB
         related_rib_inst = InstanceRIB.objects.get(related_device_id=self.host, table_name=entry['table_name'])
@@ -132,7 +131,7 @@ class ModelUpdater:
         """
         Creates instance of InstancePhyInterface model class.
 
-        :return: InstancePhyInterface instance, None
+        :return: InstancePhyInterface instance
         """
         from devices.models import DeviceInstance
         related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host,
@@ -145,7 +144,7 @@ class ModelUpdater:
         """
         Creates instance of InstanceLogInterface model class.
 
-        :return: InstanceLogInterface instance, None
+        :return: InstanceLogInterface instance
         """
         from devices.models import DeviceInstance, InstancePhyInterface
         related_instance_inst = DeviceInstance.objects.get(related_device_id=self.host,
@@ -195,13 +194,13 @@ if __name__ == '__main__':
         int_p = device.get_phy_interface_list()
         device.disconnect()
 
-        # print(facts)
-        # print('INSTANCE', instance)
-        # print('INSTANCE RIB:', inst_rib)
-        # print('ARP Table for {}: {}'.format(hostn, arp_t))
-        # print('Route Table for {}: {}'.format(hostn, route_t))
-        # print('Physical interface for {}: {}'.format(hostn, int_p))
-        # print('Logical interface for {}: {}'.format(hostn, int_l))
+        print(facts)
+        print('Instance:', instance)
+        print('Instance RIB:', inst_rib)
+        print('ARP Table for {}: {}'.format(hostn, arp_t))
+        print('Route Table for {}: {}'.format(hostn, route_t))
+        print('Physical interface for {}: {}'.format(hostn, int_p))
+        print('Logical interface for {}: {}'.format(hostn, int_l))
 
         # Order of updating models is significant!!!
         facts_updater = ModelUpdater(facts, host=hostn).updater()

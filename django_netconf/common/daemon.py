@@ -115,12 +115,12 @@ class Daemon:
                 sys.exit(1)
 
     def restart(self):
-        """Restart the daemon."""
+        # Restart the daemon
         self.stop()
         self.start()
 
     def run(self):
-        """You should override this method when you subclass Daemon.
+        """Override this method when subclass Daemon.
 
         It will be called after the process has been daemonized by
         start() or restart()."""

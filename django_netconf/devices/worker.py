@@ -5,20 +5,20 @@
 
 import json
 import logging
-
-import pika
 import ipaddress
 from queue import Queue
 from threading import Thread, Lock
 
+import pika
 from constance import config
+import django
 
 from django_netconf.devices.jdevice import JunosDevice
 from django_netconf.devices.mupdater import ModelUpdater
 from django_netconf.common.setsettings import set_settings
 
 
-logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -50,6 +50,7 @@ class DeviceThreadWorker(Thread):
                 data = ([{'last_checked_status': False}], 'Device')
                 ModelUpdater(data, host=host).updater()
                 self.err = err
+                self.status_code = 1
             else:
                 # It is possible to get KeyError here if meth_tuple improperly configured in jdevice.py
                 junos_dev_meth_names = dev.all_get_methods()
@@ -59,8 +60,10 @@ class DeviceThreadWorker(Thread):
                         ModelUpdater(data, host=host).updater()
                     except Exception as err:
                         self.err = err
+                        self.status_code = 2
                 dev.disconnect()
             finally:
+                django.db.connection.close()
                 self.lock.acquire()
                 self.callback(host, self.status_code, mq_chan, mq_prop, self.err)
                 self.lock.release()

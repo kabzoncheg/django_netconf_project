@@ -98,6 +98,7 @@ DATABASES = {
         'PASSWORD': get_env_variable('BD_PWD'),
         'HOST': 'localhost',
         'PORT': '',
+        'CONN_MAX_AGE': 0,
     }
 }
 
@@ -151,8 +152,9 @@ CONSTANCE_IGNORE_ADMIN_VERSION_CHECK = True # Check what it does!
 CONSTANCE_CONFIG = {
     'DEVICE_USER': (get_env_variable('JNPR_USR'), 'default username to access too Juniper devices', str),
     'DEVICE_PWD': (get_env_variable('JNPR_PWD'), 'default password to access too Juniper devices', str),
-    'POLL_TIME': (300, 'default time for device polling', int),
+    'POLL_TIME': (30, 'default time for device polling', int),
     'CONN_TIMEOUT': (5, 'default timeout for connecting to device', int),
     # Carefull with this number. Should be properly tested upon system configuration
-    'THREAD_NUM': (100, 'default thread number for workers', int),
+    # Should not be set more than [select count(*) from pg_stat_activity;] - POSTGRES value
+    'THREAD_NUM': (80, 'default thread number for workers', int),
 }

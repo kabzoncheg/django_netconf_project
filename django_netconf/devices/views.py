@@ -8,7 +8,7 @@ from .models import Device
 
 class DeviceListView(generic.ListView):
     model = Device
-    template_name = ''
+    template_name = 'devices/index.html'
     context_object_name = 'device_list'
     paginate_by = 20
 

@@ -76,8 +76,7 @@ class ModelUpdater:
 
     def _deviceinstance_updater(self, entry):
         """
-        Creates instance of DeviceInstance model class;
-        Creates instances of InstanceRIB model class.
+        Creates instance of DeviceInstance model class.
 
         :return: DeviceInstance instance
         """

@@ -2,9 +2,9 @@
 <html lang="en">
 
 {% if user.is_authenticated %}
-    <p align='right'> Welcome, {{ user.username }}  <a href="{% url 'django.contrib.auth.views.logout' %}">[logout]</a></p>
+    <p align='right'> Welcome, {{ user.username }}  <a href="{% url 'logout' %}">[logout]</a></p>
 {% else %}
-    <p align='right'>Welcome, Guest <a href="{% url 'django.contrib.auth.views.login' %}">[login]</a></p>
+    <p align='right'>Welcome, Guest <a href="{% url 'login' %}">[login]</a></p>
 {% endif %}
 {% load staticfiles %}
     <head>
@@ -12,11 +12,11 @@
             <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
             <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
             <link href='https://fonts.googleapis.com/css?family=Nova+Mono' rel='stylesheet' type='text/css'>
-            <link rel="stylesheet" type="text/css" href="{% static 'blogtopic/index_style.css' %}" />
+            <link rel="stylesheet" type="text/css" href="{% static 'css/base_style.css' %}" />
     </head>
     <body>
         <div class="page-header">
-            <h1><a href="/">Network Blog</a></h1>
+            <h1><a href="/">Django NMS</a></h1>
         </div>
         <div class="content container">
             <div class="row">

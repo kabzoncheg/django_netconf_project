@@ -33,7 +33,6 @@ class DeviceThreadWorker(Thread):
         self.lock = lock
         self.callback = callback
         self.err = None
-        # status_code - for future use
         self.status_code = 0
 
     def run(self):
@@ -88,6 +87,7 @@ mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhos
 mq_channel = mq_connection.channel()
 mq_channel.queue_declare(queue='db_update', durable=True, arguments={'x-message-ttl': 60000})
 
+# Queue for thread tasks
 thread_queue = Queue()
 lock = Lock()
 

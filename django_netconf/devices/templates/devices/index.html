@@ -4,23 +4,41 @@
 {% extends "base.html" %}
 {% block content %}
 
+<h1>Devices</h1>
 {% if device_list %}
+
+
     {% for device in device_list %}
-        <div class="device">
+          <div class="container">
+        <div class="jumbotron">
+            {% comment %}
             <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
-            <p> {{ device.name }}</p>
-            <p>{{ device.platform }}</p>
-        </div>
+            {% endcomment %}
+            <h2>{{ device.ip_address }}</h2>
+            {% if device.description%}
+                <p><b>Description: </b>{{ device.description }}</p>
+            {% endif %}
+            <p><b>Hostname: </b>{{ device.hostname }}</p>
+            <p><b>Model: </b>{{ device.model }}</p>
+            <p><b>UP time: </b>{{ device.up_time }}</p>
+            <p><b>Updated at: </b>{{ device.last_checked_time }}</p>
+            {% if device.last_checked_status %}
+                <p><b>Status:</b> UP</p>
+            {% else %}
+                <p><b>Status:</b> DOWN</p>
+            {% endif %}
         <table width="100%" cellspacing="0" cellpadding="5">
             <tr>
                 <td width="200" valign="top">
                     <input type="button" value="UPDATE" class="btn btn-success btn-sm">
                 </td>
                 <td valign="top">
-                    <input type="button" value="EXECUTE" class="btn btn-danger btn-sm">
+                    <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
                 </td>
             </tr>
         </table>
+        </div>
+        </div>
     {% endfor %}
 
     {% if is_paginated %}
@@ -42,7 +60,7 @@
     {% endif %}
 
 {% else %}
-    <p>No network devices have been added yet.</p>
+    <p>No network devices have been added yet...</p>
 {% endif %}
 {% endblock %}
 </html>

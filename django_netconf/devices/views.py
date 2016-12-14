@@ -10,7 +10,7 @@ class DeviceListView(generic.ListView):
     model = Device
     template_name = 'devices/index.html'
     context_object_name = 'device_list'
-    paginate_by = 20
+    paginate_by = 10
 
     def get_queryset(self):
         return Device.objects.order_by('ip_address')

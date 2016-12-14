@@ -2,65 +2,81 @@
 <html lang="en">
 
 {% extends "base.html" %}
+
+{% block menue %}
+    {% for device in device_list %}
+            <table width="100%" cellspacing="0" cellpadding="5">
+                <tr>
+                    <td width="400" valign="top">
+                        <p>{{ device.ip_address }}</p>
+                    </td>
+                    <td valign="top">
+                        {% if device.last_checked_status %}
+                            <p><span class="label label-success">UP</span></p>
+                        {% else %}
+                            <p><span class="label label-danger">DOWN</span></p>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+    {% endfor %}
+{% endblock %}
+
 {% block content %}
 
-<h1>Devices</h1>
-{% if device_list %}
+    {% if device_list %}
 
+        {% for device in device_list %}
+              <div class="well">
+                {% comment %}
+                <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
+                {% endcomment %}
+                <h2>{{ device.ip_address }}</h2>
+                {% if device.description%}
+                    <p><b>Description: </b>{{ device.description }}</p>
+                {% endif %}
+                <p><b>Hostname: </b>{{ device.hostname }}</p>
+                <p><b>Model: </b>{{ device.model }}</p>
+                <p><b>UP time: </b>{{ device.up_time }}</p>
+                <p><b>Updated at: </b>{{ device.last_checked_time }}</p>
+                {% if device.last_checked_status %}
+                    <p><b>Status:</b> UP</p>
+                {% else %}
+                    <p><b>Status:</b> DOWN</p>
+                {% endif %}
+            <table width="100%" cellspacing="0" cellpadding="5">
+                <tr>
+                    <td width="200" valign="top">
+                        <input type="button" value="UPDATE" class="btn btn-success btn-sm">
+                    </td>
+                    <td valign="top">
+                        <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
+                    </td>
+                </tr>
+            </table>
+            </div>
+        {% endfor %}
 
-    {% for device in device_list %}
-          <div class="container">
-        <div class="jumbotron">
-            {% comment %}
-            <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
-            {% endcomment %}
-            <h2>{{ device.ip_address }}</h2>
-            {% if device.description%}
-                <p><b>Description: </b>{{ device.description }}</p>
-            {% endif %}
-            <p><b>Hostname: </b>{{ device.hostname }}</p>
-            <p><b>Model: </b>{{ device.model }}</p>
-            <p><b>UP time: </b>{{ device.up_time }}</p>
-            <p><b>Updated at: </b>{{ device.last_checked_time }}</p>
-            {% if device.last_checked_status %}
-                <p><b>Status:</b> UP</p>
-            {% else %}
-                <p><b>Status:</b> DOWN</p>
-            {% endif %}
-        <table width="100%" cellspacing="0" cellpadding="5">
-            <tr>
-                <td width="200" valign="top">
-                    <input type="button" value="UPDATE" class="btn btn-success btn-sm">
-                </td>
-                <td valign="top">
-                    <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
-                </td>
-            </tr>
-        </table>
-        </div>
-        </div>
-    {% endfor %}
+        {% if is_paginated %}
+            <ul class="pagination pagination-centered">
+                {% if page_obj.has_previous %}
+                    <li><a href="?page=1"><<</a></li>
+                    <li><a href="?page={{ page_obj.previous_page_number }}"><</a></li>
+                {% endif %}
 
-    {% if is_paginated %}
-        <ul class="pagination pagination-centered">
-            {% if page_obj.has_previous %}
-                <li><a href="?page=1"><<</a></li>
-                <li><a href="?page={{ page_obj.previous_page_number }}"><</a></li>
-            {% endif %}
+                {% for i in paginator.page_range %}
+                    <li {% if page_obj.number == i %} class="active" {% endif %}><a href="?page={{i}}">{{i}}</a></li>
+                {% endfor %}
 
-            {% for i in paginator.page_range %}
-                <li {% if page_obj.number == i %} class="active" {% endif %}><a href="?page={{i}}">{{i}}</a></li>
-            {% endfor %}
+                {% if page_obj.has_next %}
+                    <li><a href="?page={{ page_obj.next_page_number }}">></a></li>
+                    <li><a href="?page={{ page_obj.paginator.num_pages }}">>></a></li>
+                {% endif %}
+            </ul>
+        {% endif %}
 
-            {% if page_obj.has_next %}
-                <li><a href="?page={{ page_obj.next_page_number }}">></a></li>
-                <li><a href="?page={{ page_obj.paginator.num_pages }}">>></a></li>
-            {% endif %}
-        </ul>
+    {% else %}
+        <p>No network devices have been added yet...</p>
     {% endif %}
-
-{% else %}
-    <p>No network devices have been added yet...</p>
-{% endif %}
 {% endblock %}
 </html>

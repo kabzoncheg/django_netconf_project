@@ -15,6 +15,9 @@ h3 a {
 }
 
 body {
-    padding-left: 15px;
+    color: black;
+    font-family: 'Nova Mono';
+    padding-left: 40px;
     padding-right: 40px;
+    align-content: center;
 }

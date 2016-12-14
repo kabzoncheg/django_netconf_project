@@ -6,13 +6,13 @@
 {% block content %}
 
 {% if form.errors %}
-<div class="alert alert-danger" align="center" id="alert_poput">
+<div class="alert alert-danger" align="center">
     <strong>Error!</strong> Your username or password does not match. Please try again.
 </div>
 {% endif %}
 
 {% load staticfiles %}
-<form method="post" action="{% url 'login' %}">
+<form method="post" action="{% url 'login' %}" style="padding: 10px; text-align: center; width: 600px; margin: 0 auto;">
     {% csrf_token %}
     <table>
         <tr>
@@ -24,9 +24,8 @@
             <td>{{ form.password }}</td>
         </tr>
     </table>
-    <input type="submit" value="Login" class="btn btn-success btn-sm" id="submit_btn">
-    <input type="hidden" name="next" value="{{ next }}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'css/login_style.css' %}" />
+    <input type="submit" value="Login" class="btn btn-success btn-sm">
+    <input type="hidden" name="next" value="{{ next }}"/>
 </form>
 
 {% endblock %}

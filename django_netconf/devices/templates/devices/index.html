@@ -5,12 +5,12 @@
 
 {% block menue %}
     {% for device in device_list %}
-            <table width="100%" cellspacing="0" cellpadding="5">
+            <table width="100%" cellspacing="0">
                 <tr>
-                    <td width="400" valign="top">
+                    <td width="100%" valign="top">
                         <p>{{ device.ip_address }}</p>
                     </td>
-                    <td valign="top">
+                    <td valign="top" align="right">
                         {% if device.last_checked_status %}
                             <p><span class="label label-success">UP</span></p>
                         {% else %}
@@ -26,12 +26,14 @@
 
     {% if device_list %}
 
+        <div class="row">
         {% for device in device_list %}
-              <div class="well">
+            <div class="col-md-6" >
+              <div class="well well-sm">
                 {% comment %}
                 <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
                 {% endcomment %}
-                <h2>{{ device.ip_address }}</h2>
+                <h4 align="center">{{ device.ip_address }}</h4>
                 {% if device.description%}
                     <p><b>Description: </b>{{ device.description }}</p>
                 {% endif %}
@@ -46,7 +48,7 @@
                 {% endif %}
             <table width="100%" cellspacing="0" cellpadding="5">
                 <tr>
-                    <td width="200" valign="top">
+                    <td width="100%" valign="top">
                         <input type="button" value="UPDATE" class="btn btn-success btn-sm">
                     </td>
                     <td valign="top">
@@ -55,7 +57,12 @@
                 </tr>
             </table>
             </div>
+            </div>
+            {% if forloop.counter|divisibleby:2 %}
+                </div><div class="row">
+            {% endif %}
         {% endfor %}
+        </div>
 
         {% if is_paginated %}
             <ul class="pagination pagination-centered">

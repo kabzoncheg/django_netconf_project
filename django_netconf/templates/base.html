@@ -1,33 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 
-{% if user.is_authenticated %}
-    <p align='right'> Welcome, {{ user.username }}  <a href="{% url 'logout' %}">[logout]</a></p>
-{% else %}
-    <p align='right'>Welcome, Guest <a href="{% url 'login' %}">[login]</a></p>
-{% endif %}
 {% load staticfiles %}
     <head>
+        <meta charset="utf-8">
         <title>Django NMS</title>
-            <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css">
-            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.7/jquery.min.js"></script>
-            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-            <link href='https://fonts.googleapis.com/css?family=Nova+Mono' rel='stylesheet' type='text/css'>
-            <link rel="stylesheet" type="text/css" href="{% static 'css/base_style.css' %}" />
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.7/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <link href='https://fonts.googleapis.com/css?family=Nova+Mono' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" type="text/css" href="{% static 'css/base_style.css' %}" />
     </head>
     <body>
-        <div class="page-header">
-            <h1><a href="/">Django NMS</a></h1>
-        </div>
-        <div class="content container-fluid">
-            <div class="col-md-3" style="padding-right:20px; width: 350px !important;">
-                {% block menue %}
-                {% endblock %}
-            </div>
-            <div class="col-md-8" style="min-width: 920px !important; border-left: 1px solid #cccccc">
-                    {% block content %}
+        <div id="wrapper">
+            <nav class="navbar navbar-default">
+                <div class="container-fluid">
+                    <div class="navbar-header">
+                        <a class="navbar-brand" href="{% url 'devices:index' %}"><strong>Django NMS</strong></a>
+                    </div>
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="{% url 'devices:index' %}"><strong>Devices</strong></a></li>
+                        <li><a href="#">Page 1</a></li>
+                        <li><a href="#">Page 2</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out"></span> <strong>Logout</strong> {{ user.username }}</a></li>
+                        {% else %}
+                            <li><a href="{% url 'login' %}"><span class="glyphicon glyphicon-log-in"></span> <strong>Login</strong></a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </nav>
+            <div class="content container-fluid">
+                <div class="col-md-3" id="menue">
+                    {% block menue %}
                     {% endblock %}
+                </div>
+                <div class="col-md-8" id="content">
+                        {% block content %}
+                        {% endblock %}
+                </div>
             </div>
+            {% block footer %}
+            {% endblock %}
+            <footer class="footer" id="footer">
+                <div class="content container">
+                    <p class="text-muted" align="center">Django NMS (release alpha v0.1.13)</p>
+                </div>
+            </footer>
         </div>
     </body>
 </html>

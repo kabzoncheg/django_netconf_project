@@ -33,19 +33,17 @@
                 </div>
             </nav>
             <div class="content container-fluid">
-                <div class="col-md-3" id="menue">
+                <div class="col-md-3" id="content_menue">
                     {% block menue %}
                     {% endblock %}
                 </div>
-                <div class="col-md-8" id="content">
+                <div class="col-md-8" id="content_data">
                         {% block content %}
                         {% endblock %}
                 </div>
             </div>
-            {% block footer %}
-            {% endblock %}
             <footer class="footer" id="footer">
-                <div class="content container">
+                <div class="footer_content container">
                     <p class="text-muted" align="center">Django NMS (release alpha v0.1.13)</p>
                 </div>
             </footer>

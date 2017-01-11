@@ -46,16 +46,27 @@
                 {% else %}
                     <p><b>Status:</b> DOWN</p>
                 {% endif %}
-            <table width="100%" cellspacing="0" cellpadding="5">
-                <tr>
-                    <td width="100%" valign="top">
-                        <input type="button" value="UPDATE" class="btn btn-success btn-sm">
-                    </td>
-                    <td valign="top">
-                        <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
-                    </td>
-                </tr>
-            </table>
+                <table width="100%" cellspacing="0" cellpadding="5">
+                    <tr>
+                        <td width="100%" valign="top">
+                            <input type="button" value="UPDATE" class="device_update_btn btn btn-success btn-sm"
+                                   id ="update_btn_{{ forloop.counter }}", lab>
+                                    <script>
+                                        function device_update(ip_addr) {
+                                            var dev = '{{ device.ip_address }}';
+                                            $.getJSON("/devices/json/update/", { ip_address: ip_addr}, function(json){
+                                                alert('WAS sucessfull? ' + json['success'] + json['device_ip'])
+                                        })
+                                    }
+                                    var ip_addr = '{{ device.ip_address }}';
+                                    $('#update_btn_{{ forloop.counter }}').click(function(){device_update(ip_addr)})
+                                    </script>
+                        </td>
+                        <td valign="top">
+                            <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
+                        </td>
+                    </tr>
+                </table>
             </div>
             </div>
             {% if forloop.counter|divisibleby:2 %}
@@ -64,26 +75,23 @@
         {% endfor %}
         </div>
 
-        {% if is_paginated %}
-            <ul class="pagination pagination-centered">
-                {% if page_obj.has_previous %}
-                    <li><a href="?page=1"><<</a></li>
-                    <li><a href="?page={{ page_obj.previous_page_number }}"><</a></li>
-                {% endif %}
-
-                {% for i in paginator.page_range %}
-                    <li {% if page_obj.number == i %} class="active" {% endif %}><a href="?page={{i}}">{{i}}</a></li>
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                    <li><a href="?page={{ page_obj.next_page_number }}">></a></li>
-                    <li><a href="?page={{ page_obj.paginator.num_pages }}">>></a></li>
-                {% endif %}
-            </ul>
-        {% endif %}
-
     {% else %}
         <p>No network devices have been added yet...</p>
     {% endif %}
+
+
+
+    {% comment %}
+        <script>
+        function device_update() {
+        $.getJSON("/devices/json/update/", { ip_address: '10.0.1.1'}, function(json){
+            alert('WAS sucessfull? ' + json['success'] + json['device_ip'])
+        })
+    }
+    $('#update_btn_1').click(function(){device_update()})
+    </script>
+    {% load static %}
+    <script type="text/javascript"src="{% static "js/device_update.js" %}"></script>
+    {% endcomment %}
 {% endblock %}
 </html>

@@ -1,11 +1,11 @@
 import json
 
-from django.shortcuts import get_object_or_404, render
-from django.http import HttpResponseRedirect, Http404
-from django.views import generic
-from django.core.urlresolvers import reverse
+from django.shortcuts import render
+from django.http import Http404
+from django.http import HttpResponseBadRequest
+from django.http import JsonResponse
+
 from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
 
 from .models import Device
 from .models import DeviceInstance
@@ -13,17 +13,10 @@ from .models import InstanceArpTable
 from .models import InstanceLogInterface
 
 
-class DeviceListView(generic.ListView):
-    model = Device
-    template_name = 'devices/index.html'
-    context_object_name = 'device_list'
-
-    def get_queryset(self):
-        return Device.objects.order_by('ip_address')
-
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(DeviceListView, self).dispatch(*args, **kwargs)
+@login_required
+def device_list_view(request):
+    device_objects = Device.objects.all().order_by('ip_address')
+    return render(request, 'devices/index.html', {'device_list': device_objects})
 
 
 @login_required
@@ -43,3 +36,18 @@ def device_list_search_universal(request, match_context, match_value):
         elif context_obj_list and model == Device:
             return render(request, 'devices/index.html', {'device_list': context_obj_list})
     raise Http404
+
+
+def json_device_update(request):
+    if request.is_ajax() and request.method == u'GET':
+        get = request.GET
+        result = {'success': False}
+        if u'ip_address' in get:
+            device_ip = get[u'ip_address']
+            result['success'] = True
+            result['device_ip'] = device_ip
+        return JsonResponse(result)
+    else:
+        return HttpResponseBadRequest
+
+

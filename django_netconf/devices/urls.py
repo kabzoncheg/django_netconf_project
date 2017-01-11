@@ -5,7 +5,7 @@ from . import views
 app_name = 'devices'
 
 urlpatterns = [
-    url(r'^$', views.DeviceListView.as_view(), name='index'),
-    # url(r'^search/vrf_name/(?P<vrf_name>.+)/$', views.device_list_search_vrf_view, name='search_vrf'),
+    url(r'^$', views.device_list_view, name='index'),
     url(r'^search/(?P<match_context>.+)/(?P<match_value>.+)/$', views.device_list_search_universal, name='search'),
+    url(r'^json/update/$', views.json_device_update, name='json_device_update'),
 ]

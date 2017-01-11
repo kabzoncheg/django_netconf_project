@@ -50,16 +50,14 @@
                     <tr>
                         <td width="100%" valign="top">
                             <input type="button" value="UPDATE" class="device_update_btn btn btn-success btn-sm"
-                                   id ="update_btn_{{ forloop.counter }}", lab>
+                                   id ="update_btn_{{ forloop.counter }}", aria-label="{{ device.ip_address }}">
                                     <script>
                                         function device_update(ip_addr) {
-                                            var dev = '{{ device.ip_address }}';
                                             $.getJSON("/devices/json/update/", { ip_address: ip_addr}, function(json){
                                                 alert('WAS sucessfull? ' + json['success'] + json['device_ip'])
                                         })
                                     }
-                                    var ip_addr = '{{ device.ip_address }}';
-                                    $('#update_btn_{{ forloop.counter }}').click(function(){device_update(ip_addr)})
+                                    $('#update_btn_{{ forloop.counter }}').click(function(){device_update($(this).attr("aria-label"))})
                                     </script>
                         </td>
                         <td valign="top">
@@ -79,17 +77,7 @@
         <p>No network devices have been added yet...</p>
     {% endif %}
 
-
-
     {% comment %}
-        <script>
-        function device_update() {
-        $.getJSON("/devices/json/update/", { ip_address: '10.0.1.1'}, function(json){
-            alert('WAS sucessfull? ' + json['success'] + json['device_ip'])
-        })
-    }
-    $('#update_btn_1').click(function(){device_update()})
-    </script>
     {% load static %}
     <script type="text/javascript"src="{% static "js/device_update.js" %}"></script>
     {% endcomment %}

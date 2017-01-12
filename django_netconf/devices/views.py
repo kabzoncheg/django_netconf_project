@@ -1,15 +1,14 @@
-import json
-
 from django.shortcuts import render
 from django.http import Http404
-from django.http import HttpResponseBadRequest
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Device
 from .models import DeviceInstance
 from .models import InstanceArpTable
 from .models import InstanceLogInterface
+from .workertasks import rpc_update
 
 
 @login_required
@@ -37,16 +36,31 @@ def device_list_search_universal(request, match_context, match_value):
     raise Http404
 
 
+@login_required
 def json_device_update(request):
+    # this view performs device model update on demand via workertasks module
     if request.is_ajax() and request.method == u'GET':
         get = request.GET
-        result = {'success': False}
+        result = {'status': False}
         if u'ip_address' in get:
             device_ip = get[u'ip_address']
-            result['success'] = True
-            result['device_ip'] = device_ip
+            try:
+                Device.objects.get(ip_address=device_ip)
+            except ObjectDoesNotExist:
+                pass
+            else:
+                rpc_status = rpc_update(device_ip)
+                if rpc_status == 1:
+                    dev_obj = Device.objects.get(ip_address=device_ip)
+                    result = dev_obj.__dict__
+                    result['status'] = True
+                    result['device_ip'] = device_ip
+                    import re
+                    keys_to_remove = list(key for key in result if re.match('^_.+', key))
+                    if keys_to_remove:
+                        for item in keys_to_remove:
+                            result.__delitem__(item)
         return JsonResponse(result)
-    else:
-        return HttpResponseBadRequest
+
 
 

@@ -49,6 +49,7 @@ class SendRPC(object):
 def rpc_update(host):
     # Performs synchronous RabbitMQ RPC request to worker daemon
     # returns status code of operation
+    logger.info('Running workertasks.py for host {}'.format(host))
     trans_id = uuid.uuid1().int
     manual_update_flag = True
     message_as_dict = {'db_update': {'host':host, 'transaction_id': trans_id, 'manual_update_flag': manual_update_flag}}
@@ -59,10 +60,11 @@ def rpc_update(host):
     logger.info('Responce {} received for Message {}'.format(message, response))
     if isinstance(response, bytes):
         json_data = response.decode('utf-8')
+        result = json.loads(json_data)
+    elif isinstance(response, dict):
+        result = response
     else:
         json_data = response
-    result = json.loads(json_data)
+        result = json.loads(json_data)
     status_code = result['status_code']
     return status_code
-
-

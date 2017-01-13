@@ -29,43 +29,34 @@
         <div class="row">
         {% for device in device_list %}
             <div class="col-md-6">
-              <div class="well well-sm" style="max-width: 500px;">
+              <div class="well well-sm" style="max-width: 500px;" aria-label="{{ device.ip_address }}">
                 {% comment %}
                 <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
                 {% endcomment %}
                 <h4 align="center">{{ device.ip_address }}</h4>
-                {% if device.description%}
+                <div class="device_description_container" id="test">
                     <p><b>Description: </b>{{ device.description }}</p>
-                {% endif %}
-                <p><b>Hostname: </b>{{ device.hostname }}</p>
-                <p><b>Model: </b>{{ device.model }}</p>
-                <p><b>UP time: </b>{{ device.up_time }}</p>
-                <p><b>Updated at: </b>{{ device.last_checked_time }}</p>
-                {% if device.last_checked_status %}
-                    <p><b>Status:</b> UP</p>
-                {% else %}
-                    <p><b>Status:</b> DOWN</p>
-                {% endif %}
+                    <p><b>Hostname: </b>{{ device.hostname }}</p>
+                    <p><b>Model: </b>{{ device.model }}</p>
+                    <p><b>UP time: </b>{{ device.up_time}}</p>
+                    <p><b>Updated at: </b>{{ device.last_checked_time|date:'l M n o H:i:s O T' }}</p>
+                    {% if device.last_checked_status %}
+                        <p><b>Status:</b> UP</p>
+                    {% else %}
+                        <p><b>Status:</b> DOWN</p>
+                    {% endif %}
+                </div>
                 <table width="100%" cellspacing="0" cellpadding="5">
                     <tr>
                         <td width="100%" valign="top">
-                            <input type="button" value="UPDATE" class="device_update_btn btn btn-success btn-sm", aria-label="{{ device.ip_address }}" onclick=device_update($(this).attr("aria-label"))>
-                            {% comment %}
-                                    <script>
-                                        function device_update(ip_addr) {
-                                            $.getJSON("/devices/json/update/", { ip_address: ip_addr}, function(json){
-                                                alert('Was request successfull? ' + json['success'] + json['device_ip'])
-                                            })
-                                        }
-                                    </script>
-                            {% endcomment %}
+                            <input type="button" value="UPDATE" class="btn btn-success btn-sm", aria-label="{{ device.ip_address }}" onclick=device_update($(this))>
                         </td>
                         <td valign="top">
                             <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
                         </td>
                     </tr>
                 </table>
-            </div>
+              </div>
             </div>
             {% if forloop.counter|divisibleby:2 %}
                 </div><div class="row">

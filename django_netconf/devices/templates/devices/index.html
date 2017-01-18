@@ -4,6 +4,20 @@
 {% extends "base.html" %}
 
 {% block menue %}
+    <div id="search">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Find Devices</h3>
+            </div>
+            <div class="panel-body">
+                <form method="GET" class="form-horizontal">
+                    {{ form.media }}
+                    {{ form.as_p }}
+                    <input type="submit" class="btn btn-primary" value="Search">
+                </form>
+            </div>
+        </div>
+    </div>
     {% for device in device_list %}
             <table width="100%" cellspacing="0">
                 <tr>
@@ -39,7 +53,7 @@
                     <p><b>Hostname: </b>{{ device.hostname }}</p>
                     <p><b>Model: </b>{{ device.model }}</p>
                     <p><b>UP time: </b>{{ device.up_time}}</p>
-                    <p><b>Updated at: </b>{{ device.last_checked_time|date:'l M n o H:i:s O T' }}</p>
+                    <p><b>Updated at: </b>{{ device.last_checked_time|date:'l M o H:i:s O T' }}</p>
                     {% if device.last_checked_status %}
                         <p><b>Status:</b> UP</p>
                     {% else %}

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+{% block menue %}
+    <ul class="list-group">
+        <li class="list-group-item"><a href="{% url 'devices:instances' device_ip %}">Instances</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:rib' device_ip %}">RIBs</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:arp' device_ip %}">ARP Tables</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:routes' device_ip %}">Route Table</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:interfaces' device_ip %}">Interfaces</a></li>
+    </ul>
+
+{% endblock %}
+{% block content %}
+{% for table in tables %}
+    {{ table.table_name }}
+{% endfor %}
+{% endblock %}
+</html>
+

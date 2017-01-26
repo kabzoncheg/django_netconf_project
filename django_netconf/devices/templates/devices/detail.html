@@ -2,74 +2,41 @@
 <html lang="en">
 
 {% extends "base.html" %}
-{% block content %}
-    <div class="post">
-        <h1>{{ post.title }}</h1>
-        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-        <p>{{ post.text|safe }}</p>
-    </div>
-    <br>
-    <h2>Comments:</h2>
-    <br>
-    {% for comment in comment_list %}
-        <div class="well">
-            <div class="post">
-                <p style="color:#2EC745; font-family:'Nova Mono' "><strong>{{ comment.user_who_created }}</strong>, wrote at {{ comment.pub_date }}:</p>
-                <br>
-                <p>{{ comment.text|safe }}</p>
-            </div>
-            <br>
+{% block menue %}
+    <ul class="list-group">
+        <li class="list-group-item"><a href="{% url 'devices:instances' device_obj.ip_address %}">Instances</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:rib' device_obj.ip_address %}">RIBs</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:arp' device_obj.ip_address %}">ARP Tables</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:routes' device_obj.ip_address %}">Route Table</a></li>
+        <li class="list-group-item"><a href="{% url 'devices:interfaces' device_obj.ip_address %}">Interfaces</a></li>
+    </ul>
 
-            {%if comment.user_who_created == user%}
-                <table width="100%" cellspacing="0" cellpadding="5">
-                    <tr>
-                         <td width="200" valign="top">
-                             <form method="POST" action="{% url 'blogtopic:delete_comment' comment.pk %}">
-                                {% csrf_token %}
-                                <input type="submit" value="Delete comment" class="btn btn-danger btn-sm">
-                             </form>
-                         </td>
-                         <td valign="top">
-                             <form method="GET" action="{% url 'blogtopic:edit_comment' comment.pk %}">
-                                 {% csrf_token %}
-                                 <input type="submit" value="Edit comment" class="btn btn-warning btn-sm">
-                             </form>
-                         </td>
-                    </tr>
-                </table>
+{% endblock %}
+{% block content %}
+
+    <div class="content_detail well" style="max-width: 500px; margin: auto;">
+        <h4 align="center">{{ device_obj.ip_address }}</h4>
+        <div class="device_description_container" id="test">
+            <p><b>Description: </b>{{ device_obj.description }}</p>
+            <p><b>Hostname: </b>{{ device_obj.hostname }}</p>
+            <p><b>FQDN: </b>{{ device_obj.fqdn }}</p>
+            <p><b>Model: </b>{{ device_obj.model }}</p>
+            <p><b>Has 2 Routing Engines: </b>{{ device_obj.two_re }}</p>
+            <p><b>Software version: </b>{{ device_obj.version}}</p>
+            <p><b>Serial number: </b>{{ device_obj.serialnumber }}</p>
+            <p><b>UP time: </b>{{ device_obj.up_time}}</p>
+            <p><b>Updated at: </b>{{ device_obj.last_checked_time|date:'l M o H:i:s O T' }}</p>
+            {% if device_obj.last_checked_status %}
+                <p><b>Status:</b> UP</p>
+            {% else %}
+                <p><b>Status:</b> DOWN</p>
             {% endif %}
         </div>
-    {% endfor %}
+    </div>
+    <input type="button" value="UPDATE" class="btn btn-success btn-lg", style="margin: auto; position: relative; left: 45%" , aria-label="{{ device_obj.ip_address }}" onclick=device_update_detail($(this))>
 
-    {% if user.is_authenticated %}
-        <br>
-        <br>
-        <br>
-        <form action="" method="post">
-            {% csrf_token %}
-            {{ form.media }}
-            {{ form.as_p}}
-            <input type="submit" value="Send comment" class="btn btn-success btn-lg"/>
-        </form>
-    {% else %}
-        <p><strong>To leave a comment you must <a href="{% url 'django.contrib.auth.views.login' %}">[login]</a></strong></p>
-    {% endif %}
-
-    <br>
-    <br>
-    <br>
-    <table width="90%" cellspacing="0" cellpadding="5" align="right">
-        <tr>
-            {% if post.get_next_post_slug != None %}
-                 <td valign="top">Next Post: <a href="{% url 'blogtopic:detail' post.get_next_post_slug %}">{{ post.get_next_post_title }}</a></td>
-            {% else %}
-            {% endif %}
-            {% if post.get_previous_post_slug != None %}
-                <td width="200" valign="top">Previous Post: <a href="{% url 'blogtopic:detail' post.get_previous_post_slug %}">{{ post.get_previous_post_title }}</a></td>
-            {% else %}
-            {% endif %}
-        </tr>
-    </table>
+    {% load static %}
+    <script type="text/javascript" src="{% static "devices/js/device_update.js" %}"></script>
 {% endblock %}
 </html>
 

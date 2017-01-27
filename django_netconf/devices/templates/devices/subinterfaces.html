@@ -8,34 +8,44 @@
         <a class="list-group-item active" href="{% url 'devices:detail' device_ip %}">{{ device_ip }}</a>
         <a href="{% url 'devices:instances' device_ip %}" class="list-group-item">Instances</a>
         <a href="{% url 'devices:rib' device_ip %}" class="list-group-item">RIBs</a>
-        <a href="{% url 'devices:arp' device_ip %}" class="list-group-item">ARP Tables</a>
+        <a href="{% url 'devices:arp' device_ip %}" class="list-group-item">ARP interfaces</a>
         <a href="{% url 'devices:routes' device_ip %}" class="list-group-item">Route Table</a>
         <a href="{% url 'devices:interfaces' device_ip %}" class="list-group-item">Interfaces</a>
         <a href="{% url 'devices:sub_interfaces' device_ip %}" class="list-group-item">Sub-Interfaces</a>
     </div>
 
 {% endblock %}
-
 {% block content %}
-
-    {% if tables %}
+    
+    {% if interfaces %}
         <table class="table table-striped table-hover ">
             <tr class="success">
                 <th>#</th>
-                <th>MAC address</th>
-                <th>IP address</th>
-                <th>Hostname</th>
-                <th>Interface name</th>
-                <th>VPN name</th>
+                <th>Name</th>
+                <th>
+                    <p>Address</p>
+                    <p>Family</p>
+                </th>
+                <th>Address</th>
+                <th>Encapsulation</th>
+                <th>MTU</th>
+                <th>IN packets</th>
+                <th>OUT packets</th>
+                <th>FW Zone</th>
+                <th>Instance</th>
             </tr>
-            {% for entry in tables %}
+            {% for entry in interfaces %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ entry.mac_address }}</td>
-                    <td>{{ entry.ip_address }}</td>
-                    <td>{{ entry.hostname }}</td>
-                    <td>{{ entry.interface_name }}</td>
-                    <td>{{ entry.vpn }}</td>
+                    <td>{{ entry.name }}</td>
+                    <td>{{ entry.address_family_name }}</td>
+                    <td>{{ entry.ifa_local }}/{{ entry.ifa_prefix }}</td>
+                    <td>{{ entry.encapsulation }}</td>
+                    <td>{{ entry.mtu }}</td>
+                    <td>{{ entry.input_packets }}</td>
+                    <td>{{ entry.output_packets }}</td>
+                    <td>{{ entry.logical_interface_zone_name }}</td>
+                    <td>{{ entry.related_instance.instance_name }}</td>
                 </tr>
                 <p>{{ table.mac_address }}</p>
             {% endfor %}
@@ -43,7 +53,7 @@
     {% else %}
         <p>This Device is offline or have not been updated yet...</p>
     {% endif %}
-
+    
 {% endblock %}
 </html>
 

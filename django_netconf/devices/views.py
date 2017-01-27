@@ -9,12 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import DataError
 
 from .forms import SearchForm
-from .models import Device
-from .models import DeviceInstance
-from .models import InstanceRIB
-from .models import InstanceRouteTable
-from .models import InstanceArpTable
-from .models import InstanceLogInterface
+from .models import *
 from .workertasks import rpc_update
 
 
@@ -136,7 +131,7 @@ def device_arp(request, ip_address):
 
 @login_required
 def device_routes(request, ip_address):
-    device_instances = InstanceRouteTable.objects.filter(related_device_id=ip_address)
+    device_instances = InstanceRouteTable.objects.filter(related_device_id=ip_address).order_by('rt_destination_prefix')
     try:
         return render(request, 'devices/routes.html', {'tables': device_instances, 'device_ip': ip_address})
     except:
@@ -145,9 +140,19 @@ def device_routes(request, ip_address):
 
 @login_required
 def device_interfaces(request, ip_address):
-    device_instances = InstanceLogInterface.objects.filter(related_device_id=ip_address)
+    device_instances = InstancePhyInterface.objects.filter(related_device_id=ip_address)
     try:
         return render(request, 'devices/interfaces.html', {'interfaces': device_instances,
+                                                                'device_ip': ip_address})
+    except:
+        return Http404
+
+
+@login_required
+def device_sub_interfaces(request, ip_address):
+    device_instances = InstanceLogInterface.objects.filter(related_device_id=ip_address)
+    try:
+        return render(request, 'devices/subinterfaces.html', {'interfaces': device_instances,
                                                                 'device_ip': ip_address})
     except:
         return Http404

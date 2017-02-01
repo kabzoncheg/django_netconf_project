@@ -14,11 +14,11 @@ from .workertasks import rpc_update
 
 
 @login_required
-def device_list_view(request):
+def device_list(request):
     if request.method == 'GET':
         form = SearchForm()
         device_objects = Device.objects.all().order_by('ip_address')
-        if 'criteria' in request.GET :
+        if 'criteria' in request.GET:
             form = SearchForm(request.GET)
         if form.is_valid():
             criteria = form.cleaned_data['criteria']
@@ -35,7 +35,7 @@ def device_list_search_universal(request, match_context, match_value):
     #       and different models fields.
     if request.method == 'GET':
         form = SearchForm()
-        if 'criteria' in request.GET :
+        if 'criteria' in request.GET:
             form = SearchForm(request.GET)
             if form.is_valid():
                 criteria = form.cleaned_data['criteria']

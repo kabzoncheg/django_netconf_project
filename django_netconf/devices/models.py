@@ -64,6 +64,8 @@ class Device (Parent):
     last_checked_time = models.DateTimeField('Device last checked time:', auto_now=True, editable=False)
     last_checked_status = models.BooleanField('True for UP, False for DOWN:', editable=False, default=False)
 
+    def __str__(self):
+        return self.ip_address
 
 class DeviceInstance(Parent):
     """

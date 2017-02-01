@@ -5,7 +5,7 @@ from . import views
 app_name = 'devices'
 
 urlpatterns = [
-    url(r'^$', views.device_list_view, name='index'),
+    url(r'^$', views.device_list, name='index'),
     url(r'^detail/(?P<ip_address>.+)/$', views.device_detail, name='detail'),
     url(r'^instances/(?P<ip_address>.+)/$', views.device_instances, name='instances'),
     url(r'^rib/(?P<ip_address>.+)/$', views.device_rib, name='rib'),

@@ -1,6 +1,7 @@
 # TO DO: Error handling; Tests
 import os
 import re
+from lxml import etree
 
 from jnpr.junos import Device
 
@@ -202,7 +203,7 @@ class JunosDevice:
         route_instance = self.get_route_instance_list()[0] if self.db_flag else self.get_route_instance_list()
         for elt in route_instance:
             while elt['instance_rib_list']:
-                entry = {elt['instance_name']:elt['instance_rib_list'].pop()}
+                entry = {elt['instance_name']: elt['instance_rib_list'].pop()}
                 table.append(entry)
 
         return table, model
@@ -257,7 +258,7 @@ class JunosDevice:
 
         :return: tuple
         """
-        meth_tuple=('get_facts', 'get_route_instance_list', 'get_instance_rib_list',
+        meth_tuple = ('get_facts', 'get_route_instance_list', 'get_instance_rib_list',
                     'get_arp_table', 'get_phy_interface_list', 'get_log_interface_list',
                     'get_route_table')
         for key in cls.__dict__.keys():
@@ -284,10 +285,36 @@ class JunosDevice:
         if self._connection:
             self._connection.close()
 
+    def xml(self, request):
+        return self._connection.execute(request)
+
+    def rpc(self, rpc_meth, kwarg_name=None, kwarg_value=None):
+        if kwarg_name:
+            response = getattr(self._connection.rpc, rpc_meth)(**{kwarg_name: kwarg_value})
+            print(response)
+        else:
+            response = getattr(self._connection.rpc, rpc_meth)()
+        return response
+
+    def cli(self, request):
+        return self._connection.cli(request)
+
+
 if __name__ == '__main__':
     # TEMP. While normal tests not implemented
+    raw_xml = '<get-chassis-inventory>' \
+                     '    <detail/>' \
+                     '</get-chassis-inventory>'
+
+    rpc_method_name = 'get_interface_information'
+    rpc_kwarg_key = 'terse'
+    rpc_kwarg_value = True
+
+    cli_show_cmd = 'show route'
+
     device = JunosDevice(host='10.0.1.1', password='Password12!', user='django', db_flag=True, auto_probe=5)
     device.connect()
+
     facts = device.get_facts()
     inst = device.get_route_instance_list()
     inst_rib = device.get_instance_rib_list()
@@ -296,6 +323,11 @@ if __name__ == '__main__':
     int_l = device.get_log_interface_list()
     int_p = device.get_phy_interface_list()
     all_methods = device.all_get_methods()
+
+    xml_request = device.xml(raw_xml)
+    rpc_request = device.rpc(rpc_method_name, rpc_kwarg_key, rpc_kwarg_value)
+    cli_request = device.cli(cli_show_cmd)
+
     device.disconnect()
 
     # print(arp_t)
@@ -305,3 +337,7 @@ if __name__ == '__main__':
     # print(int_l)
     # print(int_p)
     # print(all_methods)
+
+    # xml_request
+    etree.dump(rpc_request)
+    # print(cli_request)

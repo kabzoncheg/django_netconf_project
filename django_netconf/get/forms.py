@@ -14,3 +14,4 @@ class SingleGETRequestForm(forms.Form):
                                         queryset=Device.objects.all().order_by('ip_address'))
     input_type = forms.ChoiceField(label='Input type', choices=INPUT_TYPE, required=True)
     input_value = forms.CharField(label='Actual input', max_length=1000, required=True)
+    additional_input_value = forms.CharField(label='Additional input', max_length=100, required=False)

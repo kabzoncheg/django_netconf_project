@@ -1,4 +1,4 @@
-# TO DO: Error handling; Tests
+# TO DO: Error handling; Tests; Custom exceptions
 import os
 import re
 from lxml import etree
@@ -288,10 +288,14 @@ class JunosDevice:
     def xml(self, request):
         return self._connection.execute(request)
 
-    def rpc(self, rpc_meth, kwarg_name=None, kwarg_value=None):
-        if kwarg_name:
-            response = getattr(self._connection.rpc, rpc_meth)(**{kwarg_name: kwarg_value})
-            print(response)
+    def rpc(self, rpc_meth, kwargs_string=None):
+        if kwargs_string and isinstance(kwargs_string, str):
+            import ast
+            normal_kwargs = ast.literal_eval(kwargs_string)
+            if isinstance(normal_kwargs, dict):
+                response = getattr(self._connection.rpc, rpc_meth)(**normal_kwargs)
+            else:
+                raise AttributeError('Cannot transalte kwargs {} to a dict'.format(normal_kwargs))
         else:
             response = getattr(self._connection.rpc, rpc_meth)()
         return response
@@ -307,8 +311,7 @@ if __name__ == '__main__':
                      '</get-chassis-inventory>'
 
     rpc_method_name = 'get_interface_information'
-    rpc_kwarg_key = 'terse'
-    rpc_kwarg_value = True
+    rpc_kwarg_string = r"{'terse': True}"
 
     cli_show_cmd = 'show route'
 
@@ -325,7 +328,7 @@ if __name__ == '__main__':
     all_methods = device.all_get_methods()
 
     xml_request = device.xml(raw_xml)
-    rpc_request = device.rpc(rpc_method_name, rpc_kwarg_key, rpc_kwarg_value)
+    rpc_request = device.rpc(rpc_method_name, rpc_kwarg_string)
     cli_request = device.cli(cli_show_cmd)
 
     device.disconnect()

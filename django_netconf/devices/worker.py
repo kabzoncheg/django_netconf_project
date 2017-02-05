@@ -3,20 +3,19 @@
 #       Implement Normal Error handling (error codes),
 #       Demonize this module
 
+import ipaddress
 import json
 import logging
-import ipaddress
 from queue import Queue
 from threading import Thread, Lock
 
+import django
 import pika
 from constance import config
-import django
 
-from django_netconf.devices.jdevice import JunosDevice
-from django_netconf.devices.mupdater import ModelUpdater
+from django_netconf.common.jdevice import JunosDevice
 from django_netconf.common.setsettings import set_settings
-
+from django_netconf.devices.mupdater import ModelUpdater
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render
 from django.shortcuts import reverse
 from django.shortcuts import get_object_or_404
@@ -11,6 +13,9 @@ from django.db import DataError
 from .forms import SearchForm
 from .models import *
 from .workertasks import rpc_update
+
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -83,7 +88,7 @@ def json_device_update(request):
                 pass
             else:
                 rpc_status = rpc_update(device_ip)
-                if rpc_status == 1:
+                if rpc_status == 0:
                     dev_obj = Device.objects.get(ip_address=device_ip)
                     result = dev_obj.__dict__
                     result['status'] = True
@@ -93,6 +98,7 @@ def json_device_update(request):
                     if keys_to_remove:
                         for item in keys_to_remove:
                             result.__delitem__(item)
+        logger.info('returning result {} on AJAX request to json_device_update view'.format(result))
         return JsonResponse(result)
 
 

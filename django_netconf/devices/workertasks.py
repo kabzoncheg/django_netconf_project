@@ -38,7 +38,7 @@ class SendRPC(object):
             # In a case of worker daemon cannot process our request
             # run timer for 20 sec
             self.connection.process_data_events()
-            if time() - self.time_smpl < 30:
+            if time() - self.time_smpl < 60:
                 pass
             else:
                 self.response = {'status_code': 200}

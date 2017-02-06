@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+
+{% block content %}
+    <form action="" method="post">
+            {% csrf_token %}
+            {{ form.media }}
+            {{ form.as_p}}
+            <input type="submit" value="Send request" class="btn btn-success btn-lg"/>
+    </form>
+    {% if response %}
+        {{ response }}
+    {% endif %}
+    {% if error %}
+        {{ error }}
+    {% endif %}
+{% endblock %}
+
+</html>

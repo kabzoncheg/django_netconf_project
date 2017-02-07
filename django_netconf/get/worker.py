@@ -1,4 +1,4 @@
-# TO DO: Implement signal handling for dynamic settings (django-constance),
+# TO DO:
 #       Implement Tests,
 #       Implement Normal Error handling (error codes),
 #       Demonize this module
@@ -83,12 +83,13 @@ set_settings()
 # Set up connection to RabbitMQ server and queue declaration
 mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 mq_channel = mq_connection.channel()
-mq_channel.queue_declare(queue='db_update', durable=True, arguments={'x-message-ttl': 60000})
+mq_channel.queue_declare(queue='get_requests', durable=True, arguments={'x-message-ttl': 60000})
 
 # Queue for thread tasks
 thread_queue = Queue()
 lock = Lock()
 
+# TO CONSIDER. Additional number of threads for GET requests
 for num in range(config.THREAD_NUM):
     worker = DeviceThreadWorker(thread_queue, lock, callback)
     # Setting worker.daemon to True will let the main thread exit even if workers are blocking
@@ -114,8 +115,8 @@ def mq_method(channel, method, properties, body):
     except Exception as err:
         logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
-        logger.info('Queuing in the thread_queue DB update task for host {}'.format(host))
+        logger.info('Queuing in the thread_queue GET request task for host {}'.format(host))
         thread_queue.put((host, channel, properties))
 
-mq_channel.basic_consume(mq_method, queue='db_update', no_ack=True)
+mq_channel.basic_consume(mq_method, queue='get_requests', no_ack=True)
 mq_channel.start_consuming()

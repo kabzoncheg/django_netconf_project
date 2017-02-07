@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+import logging
 
+from constance import config
+from django_netconf.common.setsettings import set_settings
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -163,6 +166,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 CONSTANCE_IGNORE_ADMIN_VERSION_CHECK = True  # Check what it does!
 
+CONSTANCE_ADDITIONAL_FIELDS = {
+    'logging_level_select': ['django.forms.fields.ChoiceField', {
+        'widget': 'django.forms.Select',
+        'choices': (("INFO", "INFO"), ("WARNING", "WARNING"), ("ERROR", "ERROR"), ("CRITICAL", "CRITICAL"))
+    }],
+}
 CONSTANCE_CONFIG = {
     'DEVICE_USER': (get_env_variable('JNPR_USR'), 'default username to access too Juniper devices', str),
     'DEVICE_PWD': (get_env_variable('JNPR_PWD'), 'default password to access too Juniper devices', str),
@@ -171,4 +180,11 @@ CONSTANCE_CONFIG = {
     # Carefull with this number. Should be properly tested upon system configuration
     # Should not be set more than [select count(*) from pg_stat_activity;] - POSTGRES value
     'THREAD_NUM': (80, 'default thread number for workers', int),
+    'LOGGING_LEVEL': ('INFO', 'default logging level for the whole system', 'logging_level_select'),
 }
+
+# This implemented for setting global log levels for all project modules
+set_settings()
+log_level = config.LOGGING_LEVEL
+logging.basicConfig(level=getattr(logging, log_level), format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)

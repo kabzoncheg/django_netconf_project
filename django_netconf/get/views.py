@@ -1,11 +1,9 @@
-import os
 import logging
 
-from django.shortcuts import render
 from constance import config
+from django.shortcuts import render
 
-from django_netconf.common.jdevice import JunosDevice
-from django_netconf.common.zip import zipper
+from django_netconf.devices.jdevice import JunosDevice
 from .forms import SingleGETRequestForm
 
 logger = logging.getLogger(__name__)
@@ -22,8 +20,8 @@ def single_get(request):
             input_type = form.cleaned_data['input_type']
             input_value = form.cleaned_data['input_value']
             additional_input_value = form.cleaned_data['additional_input_value']
-            print(usr, pwd)
-            device = JunosDevice(host=ip_addr, user=usr, password=pwd, auto_probe=timeout)
+            print(usr, pwd, input_value)
+            device = JunosDevice(host=ip_addr, user=usr, password=pwd, auto_probe=10)
             try:
                 device.connect()
             except Exception as err:

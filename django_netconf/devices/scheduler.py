@@ -11,7 +11,6 @@ from django_netconf.common.setsettings import set_settings
 set_settings()
 from devices.models import Device
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))

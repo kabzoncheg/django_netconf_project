@@ -179,7 +179,7 @@ class ModelUpdater:
 
 if __name__ == '__main__':
     # TEMP. While normal tests not implemented
-    from django_netconf.common.jdevice import JunosDevice
+    from django_netconf.devices.jdevice import JunosDevice
     hosts_list = ['10.0.1.1', '10.0.3.2']
     for hostn in hosts_list:
         device = JunosDevice(host=hostn, password='Password12!', user='django', db_flag=True)

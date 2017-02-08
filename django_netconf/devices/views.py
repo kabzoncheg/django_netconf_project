@@ -1,18 +1,18 @@
 import logging
 
-from django.shortcuts import render
-from django.shortcuts import reverse
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
-from django.http import JsonResponse
-from django.http import Http404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DataError
+from django.http import Http404
+from django.http import HttpResponseRedirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
+from django.shortcuts import reverse
 
+from django_netconf.common.workertasks import rpc_update
 from .forms import SearchForm
 from .models import *
-from .workertasks import rpc_update
 
 
 logger = logging.getLogger(__name__)

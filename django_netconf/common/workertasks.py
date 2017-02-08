@@ -5,11 +5,10 @@ from time import time
 
 import pika
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class SendRPC(object):
+class SendRPC:
     def __init__(self):
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.channel = self.connection.channel()
@@ -23,41 +22,41 @@ class SendRPC(object):
         if self.corr_id == props.correlation_id:
             self.response = body
 
-    def call(self, n):
+    def call(self, msg, mq_routing_key, sleep_time=30):
         self.time_smpl = time()
         self.response = None
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(exchange='',
-                                   routing_key='db_update',
+                                   routing_key= mq_routing_key,
                                    properties=pika.BasicProperties(
                                          reply_to = self.callback_queue,
                                          correlation_id = self.corr_id,
                                          ),
-                                   body=str(n))
+                                   body=str(msg))
         while self.response is None:
             # In a case of worker daemon cannot process our request
-            # run timer for 20 sec
+            # run timer for slee_time sec
             self.connection.process_data_events()
-            if time() - self.time_smpl < 60:
+            if time() - self.time_smpl < sleep_time:
                 pass
             else:
                 self.response = {'status_code': 200}
+                logger.warning('RPC request for message {} timed out'.format(msg))
                 break
         return self.response
 
 
 def rpc_update(host):
-    # Performs synchronous RabbitMQ RPC request to worker daemon
+    # Performs synchronous RabbitMQ RPC request to devices.worker daemon
     # returns status code of operation
-    logger.info('Running workertasks.py for host {}'.format(host))
     trans_id = uuid.uuid1().int
     manual_update_flag = True
     message_as_dict = {'db_update': {'host':host, 'transaction_id': trans_id, 'manual_update_flag': manual_update_flag}}
     message = json.dumps(message_as_dict, sort_keys=True)
     rpc_sender = SendRPC()
     logger.info('Message {} sent to RabbitMQ exchange'.format(message))
-    response = rpc_sender.call(message)
-    logger.info('Responce {} received for Message {}'.format(message, response))
+    response = rpc_sender.call(message,mq_routing_key='db_update', sleep_time=60)
+    logger.info('Responce {} received for Message {}'.format(response, message))
     if isinstance(response, bytes):
         json_data = response.decode('utf-8')
         result = json.loads(json_data)
@@ -67,4 +66,36 @@ def rpc_update(host):
         json_data = response
         result = json.loads(json_data)
     status_code = result['status_code']
+    logger.info('Returning status code {}'.format(status_code))
     return status_code
+
+
+def multiple_get_request_async_rpc_call(host, input_type, input_value, additional_input_value=None):
+    # Performs asynchronous RabbitMQ RPC requests to get.worker daemon
+    trans_id = uuid.uuid1().int
+    manual_update_flag = True
+    message_as_dict = {'get_request': {'host':host, 'transaction_id': trans_id, 'input_type':input_type,
+                                       'input_value': input_value, 'additional_input_value': additional_input_value}}
+    message = json.dumps(message_as_dict, sort_keys=True)
+    rpc_sender = SendRPC()
+    logger.info('Message {} sent to RabbitMQ exchange'.format(message))
+    response = rpc_sender.call(message,mq_routing_key='get_requests', sleep_time=20)
+    logger.info('Responce {} received for Message {}'.format(response, message))
+    if isinstance(response, bytes):
+        json_data = response.decode('utf-8')
+        result = json.loads(json_data)
+    elif isinstance(response, dict):
+        result = response
+    else:
+        json_data = response
+        result = json.loads(json_data)
+    status_code = result['status_code']
+    logger.info('Returning status code {}'.format(status_code))
+    return status_code
+
+if __name__ == '__main__':
+    host = '10.0.1.1'
+    inp_type = 'cli'
+    inp = 'show route'
+    request = multiple_get_request_async_rpc_call(host, inp_type, inp)
+    print(request)

@@ -35,8 +35,8 @@ class DeviceThreadWorker(Thread):
 
     def run(self):
         while True:
-            # Get IP-address from the thread_queue and connect to Device
-            host, mq_chan, mq_prop = self.thread_queue.get()
+            # Get IP-address and GET request or cli command from the thread_queue and connect to Device
+            host, input_type, input_value, additional_input_value, mq_chan, mq_prop = self.thread_queue.get()
             usr = config.DEVICE_USER
             pwd = config.DEVICE_PWD
             timeout = config.CONN_TIMEOUT
@@ -44,23 +44,25 @@ class DeviceThreadWorker(Thread):
             try:
                 dev.connect()
             except Exception as err:
-                data = ([{'last_checked_status': False}], 'Device')
-                ModelUpdater(data, host=host).updater()
                 self.err = err
                 self.status_code = 1
             else:
-                # It is possible to get KeyError here if meth_tuple improperly configured in jdevice.py
-                junos_dev_meth_names = dev.all_get_methods()
-                for meth_name in junos_dev_meth_names:
-                    data = getattr(dev, meth_name)()
-                    try:
-                        ModelUpdater(data, host=host).updater()
-                    except Exception as err:
-                        self.err = err
-                        self.status_code = 2
-                dev.disconnect()
+                try:
+                    if input_type == 'xml':
+                        dev_request = dev.xml(input_value)
+                    elif input_type == 'rpc':
+                        dev_request = dev.rpc(input_value, additional_input_value)
+                    elif input_type == 'cli':
+                        dev_request = dev.cli(input_value)
+                    print(dev_request)
+                except Exception as err:
+                    self.err = err
+                    self.status_code = 200
+                else:
+                    pass
+                finally:
+                    dev.disconnect()
             finally:
-                django.db.connection.close()
                 self.lock.acquire()
                 self.callback(host, self.status_code, mq_chan, mq_prop, self.err)
                 self.lock.release()
@@ -110,13 +112,16 @@ def mq_method(channel, method, properties, body):
         # For example ipaddress.ip_address(host) could drop ValueError if ip-address is not correct
         # For future work
         data = json.loads(json_data)
-        host = data['db_update']['host']
+        host = data['get_request']['host']
+        input_type = data['get_request']['input_type']
+        input_value = data['get_request']['input_value']
+        additional_input_value = data['get_request']['additional_input_value']
         ipaddress.ip_address(host)
     except Exception as err:
         logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
         logger.info('Queuing in the thread_queue GET request task for host {}'.format(host))
-        thread_queue.put((host, channel, properties))
+        thread_queue.put((host, input_type, input_value, additional_input_value, channel, properties))
 
 mq_channel.basic_consume(mq_method, queue='get_requests', no_ack=True)
 mq_channel.start_consuming()

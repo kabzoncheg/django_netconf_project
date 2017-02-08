@@ -27,10 +27,10 @@ class SendRPC:
         self.response = None
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(exchange='',
-                                   routing_key= mq_routing_key,
+                                   routing_key=mq_routing_key,
                                    properties=pika.BasicProperties(
-                                         reply_to = self.callback_queue,
-                                         correlation_id = self.corr_id,
+                                         reply_to=self.callback_queue,
+                                         correlation_id=self.corr_id,
                                          ),
                                    body=str(msg))
         while self.response is None:
@@ -51,11 +51,12 @@ def rpc_update(host):
     # returns status code of operation
     trans_id = uuid.uuid1().int
     manual_update_flag = True
-    message_as_dict = {'db_update': {'host':host, 'transaction_id': trans_id, 'manual_update_flag': manual_update_flag}}
+    message_as_dict = {'db_update': {'host': host, 'transaction_id': trans_id,
+                                     'manual_update_flag': manual_update_flag}}
     message = json.dumps(message_as_dict, sort_keys=True)
     rpc_sender = SendRPC()
     logger.info('Message {} sent to RabbitMQ exchange'.format(message))
-    response = rpc_sender.call(message,mq_routing_key='db_update', sleep_time=60)
+    response = rpc_sender.call(message, mq_routing_key='db_update', sleep_time=60)
     logger.info('Responce {} received for Message {}'.format(response, message))
     if isinstance(response, bytes):
         json_data = response.decode('utf-8')
@@ -70,16 +71,17 @@ def rpc_update(host):
     return status_code
 
 
-def multiple_get_request_async_rpc_call(host, input_type, input_value, additional_input_value=None):
+def multiple_get_request_async_rpc_call(host, os_path, input_type, input_value, additional_input_value=None):
     # Performs asynchronous RabbitMQ RPC requests to get.worker daemon
     trans_id = uuid.uuid1().int
     manual_update_flag = True
-    message_as_dict = {'get_request': {'host':host, 'transaction_id': trans_id, 'input_type':input_type,
-                                       'input_value': input_value, 'additional_input_value': additional_input_value}}
+    message_as_dict = {'get_request': {'host': host, 'transaction_id': trans_id, 'input_type': input_type,
+                                       'input_value': input_value, 'additional_input_value': additional_input_value,
+                                       'file_path': os_path}}
     message = json.dumps(message_as_dict, sort_keys=True)
     rpc_sender = SendRPC()
     logger.info('Message {} sent to RabbitMQ exchange'.format(message))
-    response = rpc_sender.call(message,mq_routing_key='get_requests', sleep_time=20)
+    response = rpc_sender.call(message, mq_routing_key='get_requests', sleep_time=20)
     logger.info('Responce {} received for Message {}'.format(response, message))
     if isinstance(response, bytes):
         json_data = response.decode('utf-8')
@@ -97,5 +99,6 @@ if __name__ == '__main__':
     host = '10.0.1.1'
     inp_type = 'cli'
     inp = 'show route'
-    request = multiple_get_request_async_rpc_call(host, inp_type, inp)
+    path = '/home/django/Programming_projects/django_netconf_project/sample_code/test/'
+    request = multiple_get_request_async_rpc_call(host, path, inp_type, inp)
     print(request)

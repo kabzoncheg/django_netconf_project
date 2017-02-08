@@ -3,19 +3,19 @@
 #       Implement Normal Error handling (error codes),
 #       Demonize this module
 
+import os
 import ipaddress
 import json
 import logging
 from queue import Queue
 from threading import Thread, Lock
+from lxml import etree
 
-import django
 import pika
 from constance import config
 
 from django_netconf.common.setsettings import set_settings
 from django_netconf.devices.jdevice import JunosDevice
-from django_netconf.devices.mupdater import ModelUpdater
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class DeviceThreadWorker(Thread):
     def run(self):
         while True:
             # Get IP-address and GET request or cli command from the thread_queue and connect to Device
-            host, input_type, input_value, additional_input_value, mq_chan, mq_prop = self.thread_queue.get()
+            host, file_path, input_type, input_value, additional_input_value, mq_chan, mq_prop = self.thread_queue.get()
             usr = config.DEVICE_USER
             pwd = config.DEVICE_PWD
             timeout = config.CONN_TIMEOUT
@@ -59,7 +59,11 @@ class DeviceThreadWorker(Thread):
                     self.err = err
                     self.status_code = 200
                 else:
-                    pass
+                    if isinstance(dev_request, etree._Element):
+                        dev_request.write(os.path.join(file_path, 'testeg.xml'))
+                    else:
+                        with open(os.path.join(file_path, 'testeg.txt'), 'w+') as file:
+                            file.write(dev_request)
                 finally:
                     dev.disconnect()
             finally:
@@ -116,12 +120,13 @@ def mq_method(channel, method, properties, body):
         input_type = data['get_request']['input_type']
         input_value = data['get_request']['input_value']
         additional_input_value = data['get_request']['additional_input_value']
+        file_path = data['get_request']['file_path']
         ipaddress.ip_address(host)
     except Exception as err:
         logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
         logger.info('Queuing in the thread_queue GET request task for host {}'.format(host))
-        thread_queue.put((host, input_type, input_value, additional_input_value, channel, properties))
+        thread_queue.put((host, file_path, input_type, input_value, additional_input_value, channel, properties))
 
 mq_channel.basic_consume(mq_method, queue='get_requests', no_ack=True)
 mq_channel.start_consuming()

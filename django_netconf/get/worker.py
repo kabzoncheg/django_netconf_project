@@ -2,6 +2,7 @@
 #       Implement Tests,
 #       Implement Normal Error handling (error codes),
 #       Demonize this module
+#   Implement in DeviceThreadWorker Check for file write permissions
 
 import os
 import ipaddress
@@ -32,6 +33,7 @@ class DeviceThreadWorker(Thread):
         self.callback = callback
         self.err = None
         self.status_code = 0
+        self.file_name = None
 
     def run(self):
         while True:
@@ -42,11 +44,16 @@ class DeviceThreadWorker(Thread):
             timeout = config.CONN_TIMEOUT
             dev = JunosDevice(host=host, user=usr, password=pwd, db_flag=True, auto_probe=timeout)
             try:
+                logger.info('Connecting to Device {}'.format(host))
                 dev.connect()
             except Exception as err:
+                logger.error('Failed to connect to Device {}'.format(host))
                 self.err = err
                 self.status_code = 1
             else:
+                dev_request = None
+                logger.info('Executing {} request {} with additional '
+                            'parameters {} on Device {}'.format(input_type, input_value, additional_input_value, host))
                 try:
                     if input_type == 'xml':
                         dev_request = dev.xml(input_value)
@@ -54,34 +61,48 @@ class DeviceThreadWorker(Thread):
                         dev_request = dev.rpc(input_value, additional_input_value)
                     elif input_type == 'cli':
                         dev_request = dev.cli(input_value)
-                    print(dev_request)
+                    else:
+                        self.err = "input_type configured improperly!" \
+                                   " must be 'xml', 'cli' or 'rpc', but got {}".format(input_type)
+                        self.status_code = 400
+                        logger.error(self.err)
                 except Exception as err:
                     self.err = err
-                    self.status_code = 200
+                    self.status_code = 400
                 else:
                     if isinstance(dev_request, etree._Element):
-                        dev_request.write(os.path.join(file_path, 'testeg.xml'))
+                        et = etree.ElementTree(dev_request)
+                        self.file_name = mq_prop.correlation_id + '.xml'
+                        et.write(os.path.join(file_path, self.file_name))
                     else:
-                        with open(os.path.join(file_path, 'testeg.txt'), 'w+') as file:
+                        self.file_name = mq_prop.correlation_id + '.txt'
+                        with open(os.path.join(file_path, self.file_name), 'w+') as file:
                             file.write(dev_request)
                 finally:
+                    logger.info('Closing connection with Device {}'.format(host))
                     dev.disconnect()
             finally:
+                if self.err:
+                    self.file_name = mq_prop.correlation_id + '.txt'
+                    with open(os.path.join(file_path, self.file_name), 'w+') as file:
+                        file.write('\t======ERROR======\n')
+                        file.write(str(self.err))
                 self.lock.acquire()
-                self.callback(host, self.status_code, mq_chan, mq_prop, self.err)
+                self.callback(host, self.status_code, mq_chan, mq_prop, self.file_name, self.err)
                 self.lock.release()
                 self.thread_queue.task_done()
 
 
-def callback(host, status_code, mq_chan, mq_prop, err=None):
-    response = json.dumps({'host': host, 'status_code': status_code})
+def callback(host, status_code, mq_chan, mq_prop, file_name, err=None):
+    # Callback for thread. Generates RabbitMQ rpc response
+    response = json.dumps({'host': host, 'status_code': status_code, 'file_name': file_name})
     if mq_prop.reply_to and mq_prop.correlation_id:
         mq_chan.basic_publish(exchange='', routing_key=mq_prop.reply_to,
                               properties=pika.BasicProperties(correlation_id=mq_prop.correlation_id), body=response)
     if not err:
-        logger.info('Update successfull for host {}'.format(host))
+        logger.info('GET Request successfull for host {}'.format(host))
     else:
-        logger.error('Cannot update host {}, error occured: {}'.format(host, err))
+        logger.error('GET Request to host {} FAILED, error occured: {}'.format(host, err))
 
 # set Django settings
 set_settings()
@@ -125,7 +146,7 @@ def mq_method(channel, method, properties, body):
     except Exception as err:
         logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
-        logger.info('Queuing in the thread_queue GET request task for host {}'.format(host))
+        logger.info('Queuing in the thread_queue GET request task {} for host {}'.format(data, host))
         thread_queue.put((host, file_path, input_type, input_value, additional_input_value, channel, properties))
 
 mq_channel.basic_consume(mq_method, queue='get_requests', no_ack=True)

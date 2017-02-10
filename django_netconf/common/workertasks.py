@@ -92,13 +92,27 @@ def multiple_get_request_async_rpc_call(host, os_path, input_type, input_value, 
         json_data = response
         result = json.loads(json_data)
     status_code = result['status_code']
+    file_name = result['file_name']
     logger.info('Returning status code {}'.format(status_code))
-    return status_code
+    return (status_code, file_name)
 
 if __name__ == '__main__':
     host = '10.0.1.1'
-    inp_type = 'cli'
-    inp = 'show route'
+    inp_cli = 'show route'
+    inp_xml = '<get-arp-table-information>' \
+                '    <no-resolve/>' \
+                 '    <vpn>default</vpn>' \
+                 '</get-arp-table-information>'
+    inp_rpc = 'get_interface_information'
+    add_inp = r"{'terse': True}"
+
+    corrupted_cli = 'show pika-chu'
+    corrupted_xml = '<get-pika-chu></get-pika-chu>'
+    corrupted_rpc = 'get_pika_chu'
+
     path = '/home/django/Programming_projects/django_netconf_project/sample_code/test/'
-    request = multiple_get_request_async_rpc_call(host, path, inp_type, inp)
+    request = multiple_get_request_async_rpc_call(host=host, os_path=path, input_type='rpc', input_value=corrupted_rpc, additional_input_value=add_inp)
+    request = multiple_get_request_async_rpc_call(host=host, os_path=path, input_type='cli', input_value=corrupted_cli)
+    request = multiple_get_request_async_rpc_call(host=host, os_path=path, input_type='xml', input_value=corrupted_xml)
+
     print(request)

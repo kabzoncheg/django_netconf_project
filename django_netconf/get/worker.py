@@ -2,7 +2,7 @@
 #       Implement Tests,
 #       Implement Normal Error handling (error codes),
 #       Demonize this module
-#   Implement in DeviceThreadWorker Check for file write permissions
+#   Implement in GetThreadWorker Check for file write permissions
 
 import os
 import ipaddress
@@ -21,9 +21,9 @@ from django_netconf.devices.jdevice import JunosDevice
 logger = logging.getLogger(__name__)
 
 
-class DeviceThreadWorker(Thread):
+class GetThreadWorker(Thread):
     """
-    DeviceThreadworker class
+    GetThreadWorker class
     Provides multithreading support for multiple SSH-agents
     """
     def __init__(self, thread_queue, lock, callback):
@@ -118,7 +118,7 @@ lock = Lock()
 
 # TO CONSIDER. Additional number of threads for GET requests
 for num in range(config.THREAD_NUM):
-    worker = DeviceThreadWorker(thread_queue, lock, callback)
+    worker = GetThreadWorker(thread_queue, lock, callback)
     # Setting worker.daemon to True will let the main thread exit even if workers are blocking
     worker.daemon = True
     worker.start()

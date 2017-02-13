@@ -9,7 +9,8 @@ import ipaddress
 import json
 import logging
 from queue import Queue
-from threading import Thread, Lock
+from threading import Thread
+from threading import Lock
 from lxml import etree
 
 import pika
@@ -72,18 +73,19 @@ class GetThreadWorker(Thread):
                 else:
                     if isinstance(dev_request, etree._Element):
                         et = etree.ElementTree(dev_request)
-                        self.file_name = mq_prop.correlation_id + '.xml'
+                        self.file_name = mq_prop.correlation_id + '-' + host + '.xml'
                         et.write(os.path.join(file_path, self.file_name))
                     else:
-                        self.file_name = mq_prop.correlation_id + '.txt'
+                        self.file_name = mq_prop.correlation_id + '-' + host + '.txt'
                         with open(os.path.join(file_path, self.file_name), 'w+') as file:
+                            file.write('\t======{}======\n'.format(input_value))
                             file.write(dev_request)
                 finally:
                     logger.info('Closing connection with Device {}'.format(host))
                     dev.disconnect()
             finally:
                 if self.err:
-                    self.file_name = mq_prop.correlation_id + '.txt'
+                    self.file_name = mq_prop.correlation_id + '-' + host + '.txt'
                     with open(os.path.join(file_path, self.file_name), 'w+') as file:
                         file.write('\t======ERROR======\n')
                         file.write(str(self.err))

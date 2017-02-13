@@ -3,7 +3,8 @@ import uuid
 import logging
 from time import time
 from queue import Queue
-from threading import Thread, Lock
+from threading import Thread
+from threading import Lock
 
 import pika
 
@@ -73,14 +74,15 @@ class _MultipleGetRequestThreader(Thread):
                 json_data = response
                 result = json.loads(json_data)
             status_code = result['status_code']
-            if status_code == 0:
+            try:
                 file_name = result['file_name']
                 self.lock.acquire()
                 self.file_name_list.append(file_name)
                 self.lock.release()
-            else:
-                logger.error('Request {} finished with error (status code = {}'. format(message, status_code))
-            self.thread_queue.task_done()
+            except KeyError:
+                logger.error('get\worker daemon is not running or not responding!')
+            finally:
+                self.thread_queue.task_done()
 
 
 def rpc_update(host):
@@ -109,7 +111,7 @@ def rpc_update(host):
     return status_code
 
 
-def multiple_get_request_async_rpc_call(get_requests):
+def multiple_get_request(get_requests):
     # Performs asynchronous RabbitMQ RPC requests to get.worker daemon
     if isinstance(get_requests, list):
         pass
@@ -130,7 +132,10 @@ def multiple_get_request_async_rpc_call(get_requests):
         message = json.dumps(message_as_dict, sort_keys=True)
         thread_queue.put(message)
     thread_queue.join()
-    print(file_name_list)
+    if file_name_list:
+        return file_name_list
+    else:
+        return None
 
 
 if __name__ == '__main__':
@@ -156,4 +161,4 @@ if __name__ == '__main__':
     get_req_2 = {'host': host2, 'input_type': 'xml', 'input_value': inp_xml, 'additional_input_value': None,
                  'file_path': path}
 
-    multiple_get_request_async_rpc_call([get_req_1, get_req_2])
+    print(multiple_get_request([get_req_1, get_req_2]))

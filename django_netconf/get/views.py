@@ -26,7 +26,6 @@ def single_get(request):
             input_type = form.cleaned_data['input_type']
             input_value = form.cleaned_data['input_value']
             additional_input_value = form.cleaned_data['additional_input_value']
-            # path = '/home/django/Programming_projects/django_netconf_project/sample_code/test/'
             path = os.path.join(STATICFILES_DIRS[0], 'temp')
             request = {'host': ip_addr, 'input_type': input_type, 'input_value': input_value,
                        'additional_input_value': additional_input_value, 'file_path': path}
@@ -55,7 +54,6 @@ def single_get(request):
             response['Content-Disposition'] = 'attachment; filename=get_response.zip'
             in_memory.seek(0)
             response.write(in_memory.read())
-
             return response
     else:
         return render(request, 'get/index.html', {'form': form})

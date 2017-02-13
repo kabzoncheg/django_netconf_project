@@ -4,6 +4,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'get/css/index_style.css' %}" >
+
     <form action="" method="post">
             {% csrf_token %}
             {{ form.media }}

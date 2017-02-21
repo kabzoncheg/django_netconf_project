@@ -3,17 +3,30 @@
 
 {% extends "base.html" %}
 
+{% block menue %}
+
+    <div class="list-group">
+        <a class="list-group-item active" style="align-content: center; margin: auto">Single request</a>
+        <a href="{% url 'get:chain_get'%}" class="list-group-item">Chain requests</a>
+    </div>
+
+{% endblock %}
+
 {% block content %}
 
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'get/css/index_style.css' %}" >
 
-    <form action="" method="post">
+    <div class="content_detail well" style="max-width: 500px; margin: auto;">
+    <h4 align="center">Simple GET form</h4>
+        <form action="" method="post">
             {% csrf_token %}
             {{ form.media }}
             {{ form.as_p}}
             <input type="submit" value="Send request" class="btn btn-success btn-lg"/>
-    </form>
+        </form>
+    </div>
+
     {% if response %}
         {{ response }}
     {% endif %}

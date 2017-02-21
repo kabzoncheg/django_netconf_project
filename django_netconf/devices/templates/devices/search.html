@@ -47,7 +47,7 @@
                 {% comment %}
                 <h1><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h1>
                 {% endcomment %}
-                <h4 align="center">{{ device.ip_address }}</h4>
+                <h4 align="center"><a href="{% url 'devices:detail' device.ip_address %}">{{ device.ip_address }}</a></h4>
                 <div class="device_description_container" id="test">
                     <p><b>Description: </b>{{ device.description }}</p>
                     <p><b>Hostname: </b>{{ device.hostname }}</p>

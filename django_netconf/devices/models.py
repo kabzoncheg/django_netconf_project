@@ -35,6 +35,7 @@ class Parent(models.Model):
 
         class Meta:
             abstract = True
+            app_label = 'devices'
 
 
 class Device (Parent):

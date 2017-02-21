@@ -1,3 +1,25 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
+#Same old bug with Import from project root
+from devices.models import Device
+
+INPUT_TYPE = (
+    ('xml', 'raw XML'),
+    ('rpc', 'RPC on demand'),
+    ('cli', 'CLI  show command'),
+)
+
+
+class Request(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    input_type = models.CharField('Request type', max_length=1, choices=INPUT_TYPE)
+    input_value = models.CharField('Actual request data', max_length=1000)
+    additional_input_value = models.CharField('Additional request data, only for rpc request',
+                                              max_length=200, blank=True)
+
+
+class Chain(models.Model):
+    name = models.CharField('GET chain name:', max_length=100, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    requests = models.ManyToManyField(Request)

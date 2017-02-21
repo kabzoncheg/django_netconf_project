@@ -57,3 +57,8 @@ def single_get(request):
             return response
     else:
         return render(request, 'get/index.html', {'form': form})
+
+
+@login_required
+def chain_get(request):
+    pass

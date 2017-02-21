@@ -1,16 +1,19 @@
+.content_detail{
+    text-align: center;
+}
+
 .form_ip {
-    padding-right:10px;
-    width: 400px !important;
+    width: 400px;
 }
 
 .form_inp_type {
-
+    width: 400px;
 }
 
 .form_inp_val {
-
+    width: 400px;
 }
 
 .form_add_inp_val {
-    
+    width: 400px;
 }

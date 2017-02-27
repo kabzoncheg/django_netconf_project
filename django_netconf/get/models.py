@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-#Same old bug with Import from project root
+# Same old bug with Import from project root
 from devices.models import Device
 
 INPUT_TYPE = (
@@ -20,6 +20,7 @@ class Request(models.Model):
 
 
 class Chain(models.Model):
-    name = models.CharField('GET chain name:', max_length=100, editable=False)
+    name = models.CharField('GET chain name:', max_length=100)
+    description = models.CharField('GET chain description', max_length=200, default=None)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     requests = models.ManyToManyField(Request)

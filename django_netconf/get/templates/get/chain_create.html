@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+
+{% block menue %}
+
+    <div class="list-group">
+        <a href="{% url 'get:index'%}" class="list-group-item">Single request</a>
+        <a class="list-group-item active" style="align-content: center; margin: auto">Chain requests</a>
+    </div>
+
+{% endblock %}
+
+{% block content %}
+
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'get/css/chain_create_style.css' %}" >
+
+    <div class="content_detail well" style="max-width: 500px; margin: auto;">
+    <h4 align="center">Create Chain form</h4>
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.media }}
+            {{ form.as_p}}
+            <input type="submit" value="Create Chain" class="btn btn-success btn-lg"/>
+        </form>
+    </div>
+
+{% endblock %}
+
+</html>

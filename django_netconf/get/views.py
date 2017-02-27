@@ -5,12 +5,18 @@ from io import BytesIO
 
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
+from django.db import DataError
+from django.shortcuts import reverse
 
 from django_netconf.common.workertasks import multiple_get_request
 from django_netconf.config.settings import STATICFILES_DIRS
 
 from .forms import SingleGETRequestForm
+from .forms import ChainCreateForm
+from .models import Chain
+from .models import Request
 
 
 logger = logging.getLogger(__name__)
@@ -60,5 +66,29 @@ def single_get(request):
 
 
 @login_required
-def chain_get(request):
+def chain_list(request):
+    try:
+        chain_objects_list = Chain.objects.filter(user=request.user).order_by('name')
+    except DataError:
+        chain_objects_list = []
+    return render(request, 'get/chain_list.html', {'chain_list': chain_objects_list})
+
+
+@login_required
+def chain_create(request):
+    form = ChainCreateForm()
+    if request.method == 'POST':
+        form = ChainCreateForm(request.POST)
+        if form.is_valid():
+            chain_name = form.cleaned_data['name']
+            chain_description = form.cleaned_data['description']
+            chain_user = request.user
+            new_chain = Chain(name=chain_name, description=chain_description, user=chain_user)
+            new_chain.save()
+            return HttpResponseRedirect(reverse('get:chain_list'))
+    return render(request, 'get/chain_create.html', {'form': form})
+
+
+@login_required
+def chain_detail(request, name):
     pass

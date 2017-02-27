@@ -7,7 +7,7 @@
 
     <div class="list-group">
         <a class="list-group-item active" style="align-content: center; margin: auto">Single request</a>
-        <a href="{% url 'get:chain_get'%}" class="list-group-item">Chain requests</a>
+        <a href="{% url 'get:chain_list'%}" class="list-group-item">Chain requests</a>
     </div>
 
 {% endblock %}
@@ -33,6 +33,7 @@
     {% if error %}
         {{ error }}
     {% endif %}
+
 {% endblock %}
 
 </html>

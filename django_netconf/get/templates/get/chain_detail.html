@@ -12,6 +12,7 @@
     <br>
     <div class="list-group">
         <a href="{% url 'get:chain_create'%}" class ="list-group-item list-group-item-success" >Create Chain</a>
+        <a href="{% url 'get:chain_perform_get' chain.name %}" class ="list-group-item list-group-item-warning" >Perform chain request</a>
     </div>
 
 {% endblock %}

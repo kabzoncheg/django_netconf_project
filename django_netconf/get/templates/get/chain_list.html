@@ -25,7 +25,7 @@
                 <th>Description</th>
         {% for chain in chain_list %}
             <tr>
-                <td>{{ chain.name }}</td>
+                <td><a href="{% url 'get:chain_detail' chain.name %}">{{ chain.name }}</a></td>
                 <td>{{ chain.description }}</td>
             </tr>
         {% endfor %}

@@ -13,7 +13,7 @@ INPUT_TYPE = (
 
 class Request(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    input_type = models.CharField('Request type', max_length=1, choices=INPUT_TYPE)
+    input_type = models.CharField('Request type', max_length=3, choices=INPUT_TYPE)
     input_value = models.CharField('Actual request data', max_length=1000)
     additional_input_value = models.CharField('Additional request data, only for rpc request',
                                               max_length=200, blank=True)

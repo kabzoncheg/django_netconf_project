@@ -9,9 +9,12 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
+from django.shortcuts import get_object_or_404
 
 from django_netconf.common.workertasks import multiple_get_request
 from django_netconf.config.settings import STATICFILES_DIRS
+
+from devices.models import Device
 
 from .forms import SingleGETRequestForm
 from .forms import ChainCreateForm
@@ -91,4 +94,20 @@ def chain_create(request):
 
 @login_required
 def chain_detail(request, name):
-    pass
+    chain = get_object_or_404(Chain, name=name, user=request.user)
+    chain_requests = chain.requests.all()
+    form = SingleGETRequestForm()
+    if request.method == 'POST':
+        form = SingleGETRequestForm(request.POST)
+        if form.is_valid():
+            ip_addr = form.cleaned_data['ip_address'].ip_address
+            input_type = form.cleaned_data['input_type']
+            input_value = form.cleaned_data['input_value']
+            additional_input_value = form.cleaned_data['additional_input_value']
+            device = Device.objects.get(ip_address=ip_addr)
+            req = Request(device=device, input_type=input_type, input_value=input_value,
+                          additional_input_value=additional_input_value)
+            req.save()
+            chain.requests.add(req)
+            return HttpResponseRedirect(reverse('get:chain_detail', kwargs={'name': name}))
+    return render(request, 'get/chain_detail.html', {'form': form, 'chain': chain, 'requests': chain_requests})

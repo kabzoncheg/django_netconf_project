@@ -6,6 +6,7 @@ from io import BytesIO
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
@@ -47,8 +48,7 @@ def worker_task(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
             logger.info('removing file {}:', file_path)
             os.remove(file_path)
     zip_archive.close()
-    response = HttpResponse(content_type='application/zip')
-    in_memory.seek(0)
+    return in_memory.seek(0)
 
 
 @login_required
@@ -137,6 +137,27 @@ def chain_detail(request, name):
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('get:chain_detail', kwargs={'name': name}))
     return render(request, 'get/chain_detail.html', {'form': form, 'chain': chain, 'requests': chain_requests})
+
+
+@login_required
+def json_chain_request_delete(request):
+    # This view accepts AJAX request and performs Request models entries delete
+    # WORK in progress
+    if request.is_ajax() and request.method == 'GET':
+        get = request.GET
+        result = {'status': False}
+        import json
+        # data = json.loads(get)
+        # print(data)
+        print(get)
+        for item in get: print(item)
+        request_ids = get[u'request_id_list[]']
+        print(request_ids)
+        for req_id in request_ids:
+            req_obj = Request.objects.get(id=req_id)
+            req_obj.delete()
+        result = {'status': True}
+        return JsonResponse(result)
 
 
 @login_required

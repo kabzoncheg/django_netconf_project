@@ -25,13 +25,12 @@ class DeviceThreadWorker(Thread):
     DeviceThreadworker class
     Provides multithreading support for multiple SSH-agents
     """
-    def __init__(self, thread_queue, lock, callback):
+    def __init__(self, thread_queue, lock, callback, logger):
         Thread.__init__(self)
         self.thread_queue = thread_queue
         self.lock = lock
+        self.logger = logger
         self.callback = callback
-        self.err = None
-        self.status_code = 0
 
     def run(self):
         while True:
@@ -41,34 +40,41 @@ class DeviceThreadWorker(Thread):
             pwd = config.DEVICE_PWD
             timeout = config.CONN_TIMEOUT
             dev = JunosDevice(host=host, user=usr, password=pwd, db_flag=True, auto_probe=timeout)
+            error = None
+            status_code = 0
             try:
+                self.logger.info('Connecting to Device {}'.format(host))
                 dev.connect()
             except Exception as err:
+                self.logger.error('Failed to connect to Device {}'.format(host))
                 data = ([{'last_checked_status': False}], 'Device')
                 ModelUpdater(data, host=host).updater()
-                self.err = err
-                self.status_code = 1
+                error = err
+                status_code = 1
             else:
                 # It is possible to get KeyError here if meth_tuple improperly configured in jdevice.py
                 junos_dev_meth_names = dev.all_get_methods()
                 for meth_name in junos_dev_meth_names:
                     data = getattr(dev, meth_name)()
                     try:
+                        self.logger.info('Running ModelUpdater with {}'.format(meth_name))
                         ModelUpdater(data, host=host).updater()
                     except Exception as err:
-                        self.err = err
-                        self.status_code = 2
+                        self.logger.error('Failed to run ModelUpdater with {}'.format(meth_name))
+                        error = err
+                        status_code = 2
                 dev.disconnect()
             finally:
                 django.db.connection.close()
                 self.lock.acquire()
-                self.callback(host, self.status_code, mq_chan, mq_prop, self.err)
+                self.callback(host, status_code, mq_chan, mq_prop, error)
                 self.lock.release()
                 self.thread_queue.task_done()
 
 
 def callback(host, status_code, mq_chan, mq_prop, err=None):
     response = json.dumps({'host': host, 'status_code': status_code})
+    logger.info('Sending response {} to exchange {}'.format(response, mq_chan))
     if mq_prop.reply_to and mq_prop.correlation_id:
         mq_chan.basic_publish(exchange='', routing_key=mq_prop.reply_to,
                               properties=pika.BasicProperties(correlation_id=mq_prop.correlation_id), body=response)
@@ -90,15 +96,13 @@ thread_queue = Queue()
 lock = Lock()
 
 for num in range(config.THREAD_NUM):
-    worker = DeviceThreadWorker(thread_queue, lock, callback)
+    worker = DeviceThreadWorker(thread_queue, lock, callback, logger)
     # Setting worker.daemon to True will let the main thread exit even if workers are blocking
     worker.daemon = True
     worker.start()
 
 
 def mq_method(channel, method, properties, body):
-    # Strange, recieving json string from RabbitMQ queue as bytes
-    # Possible it is a bug
     logger.info('Received data {} on RabbitMQ channel {}'.format(body, channel))
     if isinstance(body, bytes):
         json_data = body.decode('utf-8')

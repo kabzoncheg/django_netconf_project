@@ -21,6 +21,7 @@
 
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'get/css/index_style.css' %}" >
+    <script type="text/javascript" src="{% static "get/js/get_scripts.js" %}"></script>
 
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
     <h4 align="center">Add additional request</h4>
@@ -32,6 +33,7 @@
         </form>
     </div>
     <br>
+    <div class="pika well well-sm"></div>
     {% if requests %}
                 <table class="table table-striped table-hover ">
                     <tr class="success">
@@ -39,15 +41,15 @@
                     <th>Request type</th>
                     <th>Request value</th>
                     <th>Additional value</th>
-                    <th><span class="glyphicon glyphicon-remove"></span></th>
+                    <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=request_delete()></th>
                     {% for request in requests %}
-                        <tr>
-                            <td>{{ request.device_id }}</td>
-                            <td>{{ request.input_type }}</td>
-                            <td>{{ request.input_value }}</td>
-                            <td>{{ request.additional_input_value}}</td>
-                            <td><input type="button" value="Delete" class="btn btn-danger btn-sm"></td>
-                        </tr>
+                            <tr class="request_checkbox">
+                                <td>{{ request.device_id }}</td>
+                                <td>{{ request.input_type }}</td>
+                                <td>{{ request.input_value }}</td>
+                                <td>{{ request.additional_input_value}}</td>
+                                <td><input type="checkbox" value="" aria-label="{{ request.id }}"></td>
+                            </tr>
         {% endfor %}
                 </table>
     {% endif %}

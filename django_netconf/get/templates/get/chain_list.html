@@ -23,16 +23,21 @@
             <tr class="success">
                 <th>Name</th>
                 <th>Description</th>
+                <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=chain_delete()></th>
         {% for chain in chain_list %}
-            <tr>
+            <tr class="chain_table_row" aria-label="{{ chain.id }}">
                 <td><a href="{% url 'get:chain_detail' chain.name %}">{{ chain.name }}</a></td>
                 <td>{{ chain.description }}</td>
+                <td><input type="checkbox" value="" aria-label="{{ chain.id }}"></td>
             </tr>
         {% endfor %}
         </table>
     {% else %}
         <p>No Chains have been created yet...</p>
     {% endif %}
+
+    {% load static %}
+    <script type="text/javascript" src="{% static "get/js/get_scripts.js" %}"></script>
 
 {% endblock %}
 

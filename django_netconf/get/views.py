@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 import zipfile
 from io import BytesIO
 
@@ -141,12 +142,31 @@ def chain_detail(request, name):
 
 
 @login_required
-def json_chain_request_delete(request):
-    # This view accepts AJAX request and performs Request models entries delete
+def json_chain_delete(request):
+    # This view accepts AJAX request and performs Chain model entries delete
     if request.is_ajax() and request.method == 'GET':
         get = request.GET
         result = {}
-        import json
+        chain_ids = json.loads(get[u'chain_id_list'])
+        for chain_id in chain_ids:
+            try:
+                chain_obj = Chain.objects.get(id=chain_id)
+                chain_obj.delete()
+            except ObjectDoesNotExist:
+                result[chain_id] = True
+            except Exception:
+                result[chain_id] = False
+            else:
+                result[chain_id] = True
+        return JsonResponse(result)
+
+
+@login_required
+def json_chain_request_delete(request):
+    # This view accepts AJAX request and performs Request model entries delete
+    if request.is_ajax() and request.method == 'GET':
+        get = request.GET
+        result = {}
         request_ids = json.loads(get[u'request_id_list'])
         for req_id in request_ids:
             try:

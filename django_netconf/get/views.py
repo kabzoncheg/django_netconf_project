@@ -28,12 +28,10 @@ from .models import Request
 logger = logging.getLogger(__name__)
 
 
-def worker_task(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
+def send_worker_request_and_zip_result(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
     file_names = multiple_get_request(task_list)
-    if file_names is None:
-        return HttpResponse(status_code=200)
-    else:
-        pass
+    if not file_names:
+        return None
     in_memory = BytesIO()
     zip_archive = zipfile.ZipFile(in_memory, mode='w')
     for file_name in file_names:
@@ -50,7 +48,7 @@ def worker_task(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
             logger.info('removing file {}:', file_path)
             os.remove(file_path)
     zip_archive.close()
-    return in_memory.seek(0)
+    return in_memory
 
 
 @login_required
@@ -66,31 +64,13 @@ def single_get(request):
             path = os.path.join(STATICFILES_DIRS[0], 'temp')
             request = {'host': ip_addr, 'input_type': input_type, 'input_value': input_value,
                        'additional_input_value': additional_input_value, 'file_path': path}
-            file_names = multiple_get_request([request])
-            if file_names is None:
+            in_memory_zip = send_worker_request_and_zip_result([request])
+            if in_memory_zip is None:
                 return HttpResponse(status_code=200)
-            else:
-                pass
-            in_memory = BytesIO()
-            zip_archive = zipfile.ZipFile(in_memory, mode='w')
-            for file_name in file_names:
-                file_path = os.path.join(path, file_name)
-                try:
-                    with open(file_path) as f:
-                        file_content = f.read()
-                    logger.info('Writing file at {} to in memory archive:', file_path.format(file_path))
-                    zip_archive.writestr(file_name, file_content)
-                except RuntimeError:
-                    logger.info('Got ERROR while writing file at {} to in memory archive:', file_path)
-                    zip_archive.close()
-                finally:
-                    logger.info('removing file {}:', file_path)
-                    os.remove(file_path)
-            zip_archive.close()
+            in_memory_zip.seek(0)
             response = HttpResponse(content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename=get_response.zip'
-            in_memory.seek(0)
-            response.write(in_memory.read())
+            response.write(in_memory_zip.read())
             return response
     else:
         return render(request, 'get/index.html', {'form': form})
@@ -152,12 +132,11 @@ def json_chain_delete(request):
             try:
                 chain_obj = Chain.objects.get(id=chain_id)
                 chain_obj.delete()
-            except ObjectDoesNotExist:
                 result[chain_id] = True
+            except ObjectDoesNotExist:
+                pass
             except Exception:
                 result[chain_id] = False
-            else:
-                result[chain_id] = True
         return JsonResponse(result)
 
 
@@ -172,12 +151,11 @@ def json_chain_request_delete(request):
             try:
                 req_obj = Request.objects.get(id=req_id)
                 req_obj.delete()
-            except ObjectDoesNotExist:
                 result[req_id] = True
+            except ObjectDoesNotExist:
+                pass
             except Exception:
                 result[req_id] = False
-            else:
-                result[req_id] = True
         return JsonResponse(result)
 
 
@@ -191,29 +169,11 @@ def multiple_get(request, chain_name):
         worker_request = {'host': ch_req.device_id, 'input_type': ch_req.input_type, 'input_value': ch_req.input_value,
                    'additional_input_value': ch_req.additional_input_value, 'file_path': path}
         worker_request_list.append(worker_request)
-    file_names = multiple_get_request(worker_request_list)
-    if file_names is None:
+    in_memory_zip = send_worker_request_and_zip_result(worker_request_list)
+    if in_memory_zip is None:
         return HttpResponse(status_code=200)
-    else:
-        pass
-    in_memory = BytesIO()
-    zip_archive = zipfile.ZipFile(in_memory, mode='w')
-    for file_name in file_names:
-        file_path = os.path.join(path, file_name)
-        try:
-            with open(file_path) as f:
-                file_content = f.read()
-            logger.info('Writing file at {} to in memory archive:', file_path.format(file_path))
-            zip_archive.writestr(file_name, file_content)
-        except RuntimeError:
-            logger.info('Got ERROR while writing file at {} to in memory archive:', file_path)
-            zip_archive.close()
-        finally:
-            logger.info('removing file {}:', file_path)
-            os.remove(file_path)
-    zip_archive.close()
+    in_memory_zip.seek(0)
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename=get_response.zip'
-    in_memory.seek(0)
-    response.write(in_memory.read())
+    response.write(in_memory_zip.read())
     return response

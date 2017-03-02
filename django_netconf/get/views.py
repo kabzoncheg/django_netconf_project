@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 
 from django_netconf.common.workertasks import multiple_get_request
 from django_netconf.config.settings import STATICFILES_DIRS
@@ -142,21 +143,21 @@ def chain_detail(request, name):
 @login_required
 def json_chain_request_delete(request):
     # This view accepts AJAX request and performs Request models entries delete
-    # WORK in progress
     if request.is_ajax() and request.method == 'GET':
         get = request.GET
-        result = {'status': False}
+        result = {}
         import json
-        # data = json.loads(get)
-        # print(data)
-        print(get)
-        for item in get: print(item)
-        request_ids = get[u'request_id_list[]']
-        print(request_ids)
+        request_ids = json.loads(get[u'request_id_list'])
         for req_id in request_ids:
-            req_obj = Request.objects.get(id=req_id)
-            req_obj.delete()
-        result = {'status': True}
+            try:
+                req_obj = Request.objects.get(id=req_id)
+                req_obj.delete()
+            except ObjectDoesNotExist:
+                result[req_id] = True
+            except Exception:
+                result[req_id] = False
+            else:
+                result[req_id] = True
         return JsonResponse(result)
 
 

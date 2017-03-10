@@ -49,6 +49,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'devices.apps.DeviceConfig',
     'get.apps.GetConfig',
+    'set.apps.SetConfig',
 
     'django.contrib.sites',
     'django.contrib.admin',

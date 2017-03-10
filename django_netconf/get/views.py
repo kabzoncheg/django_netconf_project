@@ -39,13 +39,13 @@ def send_worker_request_and_zip_result(task_list, path=os.path.join(STATICFILES_
         try:
             with open(file_path) as f:
                 file_content = f.read()
-            logger.info('Writing file at {} to in memory archive:', file_path.format(file_path))
+            logger.info('Writing file at {} to in memory archive:'.format(file_path))
             zip_archive.writestr(file_name, file_content)
         except RuntimeError:
-            logger.info('Got ERROR while writing file at {} to in memory archive:', file_path)
+            logger.info('Got ERROR while writing file at {} to in memory archive:'.format(file_path))
             zip_archive.close()
         finally:
-            logger.info('removing file {}:', file_path)
+            logger.info('removing file {}:'.format(file_path))
             os.remove(file_path)
     zip_archive.close()
     return in_memory

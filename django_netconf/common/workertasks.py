@@ -1,3 +1,4 @@
+# TO DO: consider implementing thread limit
 import json
 import uuid
 import logging
@@ -13,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class SendRPC:
+    """
+    Class SendRPC
+    Performs bloking AMPQ rpc request
+    """
     def __init__(self):
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.channel = self.connection.channel()
@@ -50,21 +55,22 @@ class SendRPC:
         return self.response
 
 
-class _MultipleGetRequestThreader(Thread):
-    def __init__(self, thread_queue, lock, file_name_list):
+class _MultipleGetSetRequestThreader(Thread):
+    def __init__(self, thread_queue, lock, file_name_list, routing_key):
         Thread.__init__(self)
         self.thread_queue = thread_queue
         self.lock = lock
         self.file_name_list = file_name_list
+        self.routing_key = routing_key
 
     def run(self):
         while True:
             message = self.thread_queue.get()
-            logger.info('Got message {} from the Thread queue'.format(message))
+            logger.info('Got message {} from the Thread queue {}'.format(message, self.thread_queue))
             rpc_sender = SendRPC()
             logger.info('Message {} sent to RabbitMQ exchange'.format(message))
-            response = rpc_sender.call(message, mq_routing_key='get_requests', sleep_time=20)
-            logger.info('Responce {} received for Message {}'.format(response, message))
+            response = rpc_sender.call(message, mq_routing_key=self.routing_key, sleep_time=20)
+            logger.info('Response {} received for Message {}'.format(response, message))
             if isinstance(response, bytes):
                 json_data = response.decode('utf-8')
                 result = json.loads(json_data)
@@ -73,7 +79,6 @@ class _MultipleGetRequestThreader(Thread):
             else:
                 json_data = response
                 result = json.loads(json_data)
-            status_code = result['status_code']
             try:
                 file_name = result['file_name']
                 self.lock.acquire()
@@ -121,7 +126,7 @@ def multiple_get_request(get_requests):
     thread_queue = Queue()
     lock = Lock()
     for num in range(len(get_requests)):
-        worker = _MultipleGetRequestThreader(thread_queue, lock, file_name_list)
+        worker = _MultipleGetSetRequestThreader(thread_queue, lock, file_name_list, 'get_requests')
         worker.daemon = True
         worker.start()
     for request in get_requests:
@@ -138,8 +143,33 @@ def multiple_get_request(get_requests):
         return None
 
 
+def multiple_set_request(set_requests):
+    # Performs asynchronous RabbitMQ RPC requests to set.worker daemon
+    if isinstance(set_requests, list):
+        pass
+    else:
+        raise TypeError
+    file_name_list = []
+    thread_queue = Queue()
+    lock = Lock()
+    for num in range(len(set_requests)):
+        worker = _MultipleGetSetRequestThreader(thread_queue, lock, file_name_list, 'set_requests')
+        worker.daemon = True
+        worker.start()
+    for request in set_requests:
+        message_as_dict = {'set_request': {'host': request['host'], 'input_value': request['input_value'],
+                                           'file_path': request['file_path']}, 'compare_flag': request['compare_flag']}
+        message = json.dumps(message_as_dict, sort_keys=True)
+        thread_queue.put(message)
+    thread_queue.join()
+    if file_name_list:
+        return file_name_list
+    else:
+        return None
+
+
 if __name__ == '__main__':
-    # While normal tests nor implemented:
+    # While normal tests not implemented:
     host1 = '10.0.1.1'
     host2 = '10.0.3.2'
     inp_cli = 'show route'

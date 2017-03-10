@@ -57,16 +57,7 @@
                         <p><b>Status:</b> DOWN</p>
                     {% endif %}
                 </div>
-                <table width="100%" cellspacing="0" cellpadding="5">
-                    <tr>
-                        <td width="100%" valign="top">
-                            <input type="button" value="UPDATE" class="btn btn-success btn-sm", aria-label="{{ device.ip_address }}" onclick=device_update($(this))>
-                        </td>
-                        <td valign="top">
-                            <input type="button" value="EXECUTE" class="btn btn-info btn-sm">
-                        </td>
-                    </tr>
-                </table>
+                    <input type="button" value="UPDATE" class="btn btn-success btn-sm", style="margin: auto; position: relative; left: 43%", aria-label="{{ device.ip_address }}" onclick=device_update($(this))>
                 </div>
             </div>
             {% if forloop.counter|divisibleby:2 %}

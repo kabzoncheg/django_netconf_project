@@ -36,7 +36,8 @@ def configurations_list(request):
     if request.method == 'POST':
         form = UploadConfigForm(request.POST)
         if form.is_valid():
-            config_name = form.cleaned_data['config_name']
+            # config_name = form.cleaned_data['config_name']
             config_description = form.cleaned_data['config_description']
             user = request.user
             config = request.FILES
+    return render(request, 'set/configurations.html', {'form': form})

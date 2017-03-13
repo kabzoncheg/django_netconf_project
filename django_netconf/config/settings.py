@@ -97,12 +97,7 @@ TEMPLATES = [
     },
 ]
 
-
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -115,10 +110,6 @@ DATABASES = {
         'CONN_MAX_AGE': 0,
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -135,10 +126,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/1.10/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Europe/Moscow'
@@ -148,10 +135,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
 
@@ -173,6 +156,7 @@ CONSTANCE_ADDITIONAL_FIELDS = {
         'choices': (("INFO", "INFO"), ("WARNING", "WARNING"), ("ERROR", "ERROR"), ("CRITICAL", "CRITICAL"))
     }],
 }
+# Add CONSTANCE_CONFIG only after initial database migration
 CONSTANCE_CONFIG = {
     'DEVICE_USER': (get_env_variable('JNPR_USR'), 'default username to access too Juniper devices', str),
     'DEVICE_PWD': (get_env_variable('JNPR_PWD'), 'default password to access too Juniper devices', str),

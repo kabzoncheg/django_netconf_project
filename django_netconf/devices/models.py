@@ -180,18 +180,3 @@ class InstanceLogInterface(Parent):
 
     class Meta:
         unique_together = ('related_device', 'related_instance', 'related_interface', 'name')
-
-
-def device_config_path(instance, filename):
-    # File will be uploaded to MEDIA_ROOT/configs/device_<id>/filename
-    return 'configs/device_{0}/{1}'.format(instance.related_device_id, filename)
-
-
-class DeviceConfig (Parent):
-    """
-    Device Configuration class.
-    Represents configuration files for each device
-    """
-    related_device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    upload_path = models.FileField(upload_to=device_config_path)
-    upload_time = models.DateTimeField(editable=False, auto_now=True)

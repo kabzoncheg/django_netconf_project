@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+
+{% block menue %}
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="content_detail well" style="max-width: 500px; margin: auto;">
+    <h4 align="center">Simple GET form</h4>
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.media }}
+            {{ form.as_p}}
+            <input type="submit" value="Upload files" class="btn btn-success btn-lg"/>
+        </form>
+    </div>
+
+{% endblock %}
+
+</html>

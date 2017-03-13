@@ -56,11 +56,11 @@ class SendRPC:
 
 
 class _MultipleGetSetRequestThreader(Thread):
-    def __init__(self, thread_queue, lock, file_name_list, routing_key):
+    def __init__(self, thread_queue, lock, worker_response_list, routing_key):
         Thread.__init__(self)
         self.thread_queue = thread_queue
         self.lock = lock
-        self.file_name_list = file_name_list
+        self.worker_response_list = worker_response_list
         self.routing_key = routing_key
 
     def run(self):
@@ -80,9 +80,8 @@ class _MultipleGetSetRequestThreader(Thread):
                 json_data = response
                 result = json.loads(json_data)
             try:
-                file_name = result['file_name']
                 self.lock.acquire()
-                self.file_name_list.append(file_name)
+                self.worker_response_list.append(result)
                 self.lock.release()
             except KeyError:
                 logger.error('get\worker daemon is not running or not responding!')
@@ -122,11 +121,11 @@ def multiple_get_request(get_requests):
         pass
     else:
         raise TypeError
-    file_name_list = []
+    worker_response_list = []
     thread_queue = Queue()
     lock = Lock()
     for num in range(len(get_requests)):
-        worker = _MultipleGetSetRequestThreader(thread_queue, lock, file_name_list, 'get_requests')
+        worker = _MultipleGetSetRequestThreader(thread_queue, lock, worker_response_list, 'get_requests')
         worker.daemon = True
         worker.start()
     for request in get_requests:
@@ -137,8 +136,8 @@ def multiple_get_request(get_requests):
         message = json.dumps(message_as_dict, sort_keys=True)
         thread_queue.put(message)
     thread_queue.join()
-    if file_name_list:
-        return file_name_list
+    if worker_response_list:
+        return worker_response_list
     else:
         return None
 
@@ -149,11 +148,11 @@ def multiple_set_request(set_requests):
         pass
     else:
         raise TypeError
-    file_name_list = []
+    worker_response_list = []
     thread_queue = Queue()
     lock = Lock()
     for num in range(len(set_requests)):
-        worker = _MultipleGetSetRequestThreader(thread_queue, lock, file_name_list, 'set_requests')
+        worker = _MultipleGetSetRequestThreader(thread_queue, lock, worker_response_list, 'set_requests')
         worker.daemon = True
         worker.start()
     for request in set_requests:
@@ -162,8 +161,8 @@ def multiple_set_request(set_requests):
         message = json.dumps(message_as_dict, sort_keys=True)
         thread_queue.put(message)
     thread_queue.join()
-    if file_name_list:
-        return file_name_list
+    if worker_response_list:
+        return worker_response_list
     else:
         return None
 

@@ -29,12 +29,13 @@ logger = logging.getLogger(__name__)
 
 
 def send_worker_request_and_zip_result(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
-    file_names = multiple_get_request(task_list)
-    if not file_names:
+    worker_response = multiple_get_request(task_list)
+    if not worker_response:
         return None
     in_memory = BytesIO()
     zip_archive = zipfile.ZipFile(in_memory, mode='w')
-    for file_name in file_names:
+    for response in worker_response:
+        file_name = response['file_name']
         file_path = os.path.join(path, file_name)
         try:
             with open(file_path) as f:

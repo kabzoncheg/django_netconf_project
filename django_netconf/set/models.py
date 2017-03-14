@@ -15,3 +15,6 @@ class Configurations(models.Model):
     mime_type = models.CharField('MIME Type', max_length=100, default=None)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     config = models.FileField(upload_to=device_config_path)
+
+    class Meta:
+        unique_together = ('name', 'user')

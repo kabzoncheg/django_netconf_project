@@ -19,6 +19,7 @@ from django_netconf.config.settings import STATICFILES_DIRS
 
 from devices.models import Device
 
+from .models import Configurations
 from .forms import UploadConfigForm
 
 
@@ -33,11 +34,18 @@ def single_set(request):
 @login_required
 def configurations_list(request):
     form = UploadConfigForm()
+    configurations_list = Configurations.objects.filter(user=request.user).order_by('name')
     if request.method == 'POST':
-        form = UploadConfigForm(request.POST)
+        form = UploadConfigForm(request.POST, request.FILES)
         if form.is_valid():
             # config_name = form.cleaned_data['config_name']
             config_description = form.cleaned_data['config_description']
             user = request.user
-            config = request.FILES
-    return render(request, 'set/configurations.html', {'form': form})
+            configs = request.FILES.getlist('config')
+            for config in configs:
+                print(config.name)
+                print(config.content_type)
+                instance = Configurations(name=config.name, description=config_description,
+                                          mime_type=config.content_type, user=user, config=config)
+                instance.save()
+    return render(request, 'set/configurations.html', {'form': form, 'configurations_list': configurations_list})

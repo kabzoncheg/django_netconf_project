@@ -11,7 +11,7 @@
 
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
     <h4 align="center">Simple GET form</h4>
-        <form action="" method="post">
+        <form action="" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.media }}
             {{ form.as_p}}
@@ -19,6 +19,26 @@
         </form>
     </div>
 
+    <br>
+    {% if configurations_list %}
+        <table class="table table-striped table-hover">
+            <tr class="success">
+                <th>File name</th>
+                <th>MIME type</th>
+                <th>Description</th>
+                <th><input type="button" value="Delete" class="btn btn-danger btn-sm"></th>
+        {% for config in configurations_list %}
+            <tr class="chain_table_row" aria-label="{{ config.name }}">
+                <td>{{ config.name }}</td>
+                <td>{{ config.mime_type }}</td>
+                <td>{{ config.description }}</td>
+                <td><input type="checkbox" value="" aria-label="{{ config.id }}"></td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <p>No Configuration files have not been added yet...</p>
+    {% endif %}
 {% endblock %}
 
 </html>

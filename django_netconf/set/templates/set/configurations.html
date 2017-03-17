@@ -9,8 +9,13 @@
 
 {% block content %}
 
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'set/css/configurations_style.css' %}" >
+    <script type="text/javascript" src="{% static "set/js/set_scripts.js" %}"></script>
+
+
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
-    <h4 align="center">Simple GET form</h4>
+    <h4 align="center">Upload Configurations</h4>
         <form action="" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.media }}
@@ -29,10 +34,10 @@
                 <th>File name</th>
                 <th>MIME type</th>
                 <th>Description</th>
-                <th><input type="button" value="Delete" class="btn btn-danger btn-sm"></th>
+                <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=configuration_delete()></th>
         {% for config in configurations_list %}
-            <tr class="chain_table_row" aria-label="{{ config.name }}">
-                <td>{{ config.name }}</td>
+            <tr class="chain_table_row" aria-label="{{ config.id }}">
+                <td><a href="{% url 'set:configurations_detail' config.id %}">{{ config.name }}</a> </td>
                 <td>{{ config.mime_type }}</td>
                 <td>{{ config.description }}</td>
                 <td><input type="checkbox" value="" aria-label="{{ config.id }}"></td>
@@ -42,6 +47,7 @@
     {% else %}
         <p>Configuration files have not been added yet...</p>
     {% endif %}
+
 {% endblock %}
 
 </html>

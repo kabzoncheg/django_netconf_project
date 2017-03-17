@@ -128,35 +128,39 @@ def json_chain_delete(request):
     if request.is_ajax() and request.method == 'GET':
         get = request.GET
         result = {}
-        chain_ids = json.loads(get[u'chain_id_list'])
-        for chain_id in chain_ids:
+        json_data = json.loads(get[u'chain_id_list'])
+        for element in json_data:
             try:
-                chain_obj = Chain.objects.get(id=chain_id)
-                chain_obj.delete()
-                result[chain_id] = True
+                instance = Chain.objects.get(id=element)
+                if request.user.id == instance.user_id:
+                    instance.delete()
+                    result[element] = True
+                else:
+                    result[element] = False
             except ObjectDoesNotExist:
                 pass
             except Exception:
-                result[chain_id] = False
+                result[element] = False
         return JsonResponse(result)
 
 
 @login_required
 def json_chain_request_delete(request):
     # This view accepts AJAX request and performs Request model entries delete
+    # TO DO: implement user check
     if request.is_ajax() and request.method == 'GET':
         get = request.GET
         result = {}
-        request_ids = json.loads(get[u'request_id_list'])
-        for req_id in request_ids:
+        json_data = json.loads(get[u'request_id_list'])
+        for element in json_data:
             try:
-                req_obj = Request.objects.get(id=req_id)
-                req_obj.delete()
-                result[req_id] = True
+                instance = Request.objects.get(id=element)
+                instance.delete()
+                result[element] = True
             except ObjectDoesNotExist:
                 pass
             except Exception:
-                result[req_id] = False
+                result[element] = False
         return JsonResponse(result)
 
 

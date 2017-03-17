@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def single_set(request):
-    return HttpResponse(content='Under development!!!', content_type='text')
+    return render(request, 'set/index.html')
 
 
 @login_required
@@ -44,7 +44,7 @@ def configurations_list(request):
             config_description = form.cleaned_data['config_description']
             user = request.user
             configs = request.FILES.getlist('config')
-            duplicate_file_names =[]
+            duplicate_file_names = []
             for config in configs:
                 instance = Configurations(name=config.name, description=config_description,
                                           mime_type=config.content_type, user=user, config=config)
@@ -54,6 +54,33 @@ def configurations_list(request):
                     duplicate_file_names.append(config.name)
             if duplicate_file_names:
                 error = 'File(s) with folowing name(s) {} already exist(s)!'.format(duplicate_file_names)
-            print(error)
     return render(request, 'set/configurations.html', {'form': form, 'configurations_list': configurations_list,
                                                        'error': error})
+
+
+@login_required
+def configurations_detail(request, config_id):
+    instance = Configurations.objects.get(id=config_id, user_id=request.user.id)
+    file = instance.config.read()
+    return render(request, 'set/configurations_detail.html', {'config_file': file})
+
+
+@login_required
+def json_configurations_delete(request):
+    if request.is_ajax() and request.method == 'GET':
+        get = request.GET
+        result = {}
+        json_data = json.loads(get[u'config_id_list'])
+        for element in json_data:
+            try:
+                instance = Configurations.objects.get(id=element)
+                if request.user.id == instance.user_id:
+                    instance.delete()
+                    result[element] = True
+                else:
+                    result[element] = False
+            except ObjectDoesNotExist:
+                pass
+            except Exception:
+                result[element] = False
+        return JsonResponse(result)

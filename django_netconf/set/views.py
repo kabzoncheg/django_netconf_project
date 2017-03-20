@@ -21,7 +21,10 @@ from django_netconf.config.settings import STATICFILES_DIRS
 from devices.models import Device
 
 from .models import Configurations
+from .models import SetChain
+from .models import SetRequest
 from .forms import UploadConfigForm
+from .forms import ChainCreateForm
 
 
 logger = logging.getLogger(__name__)
@@ -84,3 +87,48 @@ def json_configurations_delete(request):
             except Exception:
                 result[element] = False
         return JsonResponse(result)
+
+
+@login_required
+def chain_list(request):
+    try:
+        chain_objects_list = SetChain.objects.filter(user=request.user).order_by('name')
+    except DataError:
+        chain_objects_list = []
+    return render(request, 'set/chain_list.html', {'chain_list': chain_objects_list})
+
+
+@login_required
+def chain_create(request):
+    form = ChainCreateForm()
+    if request.method == 'POST':
+        form = ChainCreateForm(request.POST)
+        if form.is_valid():
+            chain_name = form.cleaned_data['name']
+            chain_description = form.cleaned_data['description']
+            chain_user = request.user
+            new_chain = SetChain(name=chain_name, description=chain_description, user=chain_user)
+            new_chain.save()
+            return HttpResponseRedirect(reverse('set:chain_list'))
+    return render(request, 'set/chain_create.html', {'form': form})
+
+
+@login_required
+def chain_detail(request, name):
+    chain = get_object_or_404(Chain, name=name, user=request.user)
+    chain_requests = chain.requests.all()
+    form = SingleGETRequestForm()
+    if request.method == 'POST':
+        form = SingleGETRequestForm(request.POST)
+        if form.is_valid():
+            ip_addr = form.cleaned_data['ip_address'].ip_address
+            input_type = form.cleaned_data['input_type']
+            input_value = form.cleaned_data['input_value']
+            additional_input_value = form.cleaned_data['additional_input_value']
+            device = Device.objects.get(ip_address=ip_addr)
+            req = Request(device=device, input_type=input_type, input_value=input_value,
+                          additional_input_value=additional_input_value)
+            req.save()
+            chain.requests.add(req)
+            return HttpResponseRedirect(reverse('set:chain_detail', kwargs={'name': name}))
+    return render(request, 'set/chain_detail.html', {'form': form, 'chain': chain, 'requests': chain_requests})

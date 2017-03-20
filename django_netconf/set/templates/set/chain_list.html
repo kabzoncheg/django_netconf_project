@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "base.html" %}
+
+{% block menue %}
+
+    <div class="list-group">
+        <a href="{% url 'set:index'%}" class="list-group-item">Single SET request</a>
+        <a class="list-group-item active" style="align-content: center; margin: auto">Chain SET requests</a>
+        <a href="{% url 'set:configurations_list'%}" class="list-group-item">Configurations</a>
+    </div>
+    </div>
+    <br>
+    <div class="list-group">
+        <a href="{% url 'set:chain_create'%}" class ="list-group-item list-group-item-success" >Create Chain</a>
+    </div>
+
+{% endblock %}
+
+{% block content %}
+
+    {% if chain_list %}
+        <table class="table table-striped table-hover">
+            <tr class="success">
+                <th>Name</th>
+                <th>Description</th>
+                <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=chain_delete()></th>
+        {% for chain in chain_list %}
+            <tr class="chain_table_row" aria-label="{{ chain.id }}">
+                <td><a href="{% url 'get:chain_detail' chain.name %}">{{ chain.name }}</a></td>
+                <td>{{ chain.description }}</td>
+                <td><input type="checkbox" value="" aria-label="{{ chain.id }}"></td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <p>Chains have not been created yet...</p>
+    {% endif %}
+
+    {% load static %}
+    <script type="text/javascript" src="{% static "set/js/get_scripts.js" %}"></script>
+
+{% endblock %}
+
+</html>

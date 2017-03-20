@@ -10,6 +10,7 @@ def device_config_path(instance, filename):
 
 
 class Configurations(models.Model):
+    # Rename to Configuration
     name = models.CharField('Configuration name', max_length=100)
     description = models.CharField('Configuration description', max_length=200, default=None)
     mime_type = models.CharField('MIME Type', max_length=100, default=None)
@@ -18,3 +19,15 @@ class Configurations(models.Model):
 
     class Meta:
         unique_together = ('name', 'user')
+
+
+class SetRequest(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    config = models.ForeignKey(Configurations, on_delete=models.CASCADE)
+
+
+class SetChain(models.Model):
+    name = models.CharField('SET chain name:', max_length=100)
+    description = models.CharField('SET chain description', max_length=200, default=None)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    requests = models.ManyToManyField(SetRequest)

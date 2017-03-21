@@ -10,7 +10,6 @@
         <a class="list-group-item active" style="align-content: center; margin: auto">Chain SET requests</a>
         <a href="{% url 'set:configurations_list'%}" class="list-group-item">Configurations</a>
     </div>
-    </div>
     <br>
     <div class="list-group">
         <a href="{% url 'set:chain_create'%}" class ="list-group-item list-group-item-success" >Create Chain</a>
@@ -28,7 +27,7 @@
                 <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=chain_delete()></th>
         {% for chain in chain_list %}
             <tr class="chain_table_row" aria-label="{{ chain.id }}">
-                <td><a href="{% url 'get:chain_detail' chain.name %}">{{ chain.name }}</a></td>
+                <td><a href="{% url 'set:chain_detail' chain.name %}">{{ chain.name }}</a></td>
                 <td>{{ chain.description }}</td>
                 <td><input type="checkbox" value="" aria-label="{{ chain.id }}"></td>
             </tr>

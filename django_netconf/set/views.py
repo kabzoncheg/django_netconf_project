@@ -25,6 +25,7 @@ from .models import SetChain
 from .models import SetRequest
 from .forms import UploadConfigForm
 from .forms import ChainCreateForm
+from .forms import SingleSETRequestForm
 
 
 logger = logging.getLogger(__name__)
@@ -115,19 +116,17 @@ def chain_create(request):
 
 @login_required
 def chain_detail(request, name):
-    chain = get_object_or_404(Chain, name=name, user=request.user)
+    chain = get_object_or_404(SetChain, name=name, user=request.user)
     chain_requests = chain.requests.all()
-    form = SingleGETRequestForm()
+    form = SingleSETRequestForm(user_id=request.user.id)
     if request.method == 'POST':
-        form = SingleGETRequestForm(request.POST)
+        form = SingleSETRequestForm(request.POST, user_id=request.user.id)
         if form.is_valid():
             ip_addr = form.cleaned_data['ip_address'].ip_address
-            input_type = form.cleaned_data['input_type']
-            input_value = form.cleaned_data['input_value']
-            additional_input_value = form.cleaned_data['additional_input_value']
+            config_id = form.cleaned_data['config'].id
             device = Device.objects.get(ip_address=ip_addr)
-            req = Request(device=device, input_type=input_type, input_value=input_value,
-                          additional_input_value=additional_input_value)
+            config = Configurations.objects.get(id=config_id)
+            req = SetRequest(device=device, config=config)
             req.save()
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('set:chain_detail', kwargs={'name': name}))

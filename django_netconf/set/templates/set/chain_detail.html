@@ -23,8 +23,8 @@
 {% block content %}
 
     {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'get/css/index_style.css' %}" >
-    <script type="text/javascript" src="{% static "get/js/get_scripts.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'set/css/common_style.css' %}" >
+    <script type="text/javascript" src="{% static "set/js/get_scripts.js" %}"></script>
 
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
     <h4 align="center">Add additional request</h4>
@@ -45,7 +45,7 @@
                     {% for request in requests %}
                             <tr class="request_table_row" aria-label="{{ request.id }}">
                                 <td>{{ request.device_id }}</td>
-                                <td>{{ request.config }}</td>
+                                <td>{{ request.config.name }}</td>
                                 <td><input type="checkbox" value="" aria-label="{{ request.id }}"></td>
                             </tr>
         {% endfor %}

@@ -118,9 +118,10 @@ def chain_create(request):
 def chain_detail(request, name):
     chain = get_object_or_404(SetChain, name=name, user=request.user)
     chain_requests = chain.requests.all()
-    form = SingleSETRequestForm(user_id=request.user.id)
+    form = SingleSETRequestForm()
+    form.fields['config'].queryset = Configurations.objects.filter(user_id=request.user.id)
     if request.method == 'POST':
-        form = SingleSETRequestForm(request.POST, user_id=request.user.id)
+        form = SingleSETRequestForm(request.POST)
         if form.is_valid():
             ip_addr = form.cleaned_data['ip_address'].ip_address
             config_id = form.cleaned_data['config'].id

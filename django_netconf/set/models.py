@@ -20,6 +20,9 @@ class Configurations(models.Model):
     class Meta:
         unique_together = ('name', 'user')
 
+    def get_form_name(self):
+        return self.name
+
 
 class SetRequest(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)

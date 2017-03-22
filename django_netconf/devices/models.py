@@ -68,6 +68,10 @@ class Device (Parent):
     def __str__(self):
         return self.ip_address
 
+    def get_form_name(self):
+        return '{}_{}'.format(self.hostname, self.ip_address)
+
+
 class DeviceInstance(Parent):
     """
     DeviceInstance class.

@@ -24,11 +24,13 @@
             <tr class="success">
                 <th>Name</th>
                 <th>Description</th>
+                <th>Request counter</th>
                 <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=chain_delete()></th>
         {% for chain in chain_list %}
             <tr class="chain_table_row" aria-label="{{ chain.id }}">
                 <td><a href="{% url 'set:chain_detail' chain.name %}">{{ chain.name }}</a></td>
                 <td>{{ chain.description }}</td>
+                <td>{{ chain.requests.count }}</td>
                 <td><input type="checkbox" value="" aria-label="{{ chain.id }}"></td>
             </tr>
         {% endfor %}

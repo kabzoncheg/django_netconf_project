@@ -3,7 +3,7 @@ import os
 import json
 import zipfile
 from io import BytesIO
-
+from django.views import View
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -74,7 +74,7 @@ def json_configurations_delete(request):
     if request.is_ajax() and request.method == 'GET':
         get = request.GET
         result = {}
-        json_data = json.loads(get[u'config_id_list'])
+        json_data = json.loads(get['config_id_list'])
         for element in json_data:
             try:
                 instance = Configurations.objects.get(id=element)

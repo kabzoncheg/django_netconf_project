@@ -16,6 +16,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 
 from django_netconf.common.workertasks import multiple_get_request
+from django_netconf.common.views import JsonDeleteByIDView
 from django_netconf.config.settings import STATICFILES_DIRS
 
 from devices.models import Device
@@ -44,7 +45,6 @@ def configurations_list(request):
     if request.method == 'POST':
         form = UploadConfigForm(request.POST, request.FILES)
         if form.is_valid():
-            # config_name = form.cleaned_data['config_name']
             config_description = form.cleaned_data['config_description']
             user = request.user
             configs = request.FILES.getlist('config')
@@ -69,25 +69,10 @@ def configurations_detail(request, config_id):
     return render(request, 'set/configurations_detail.html', {'config_file': file})
 
 
-@login_required
-def json_configurations_delete(request):
-    if request.is_ajax() and request.method == 'GET':
-        get = request.GET
-        result = {}
-        json_data = json.loads(get['config_id_list'])
-        for element in json_data:
-            try:
-                instance = Configurations.objects.get(id=element)
-                if request.user.id == instance.user_id:
-                    instance.delete()
-                    result[element] = True
-                else:
-                    result[element] = False
-            except ObjectDoesNotExist:
-                pass
-            except Exception:
-                result[element] = False
-        return JsonResponse(result)
+class JsonConfigurationsDelete(JsonDeleteByIDView):
+    model = Configurations
+    json_array_name = 'config_id_list'
+    user_id_check = True
 
 
 @login_required
@@ -132,3 +117,13 @@ def chain_detail(request, name):
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('set:chain_detail', kwargs={'name': name}))
     return render(request, 'set/chain_detail.html', {'form': form, 'chain': chain, 'requests': chain_requests})
+
+
+class JsonSetChainDelete(JsonDeleteByIDView):
+    model = SetChain
+    user_id_check = True
+
+
+class JsonSetRequestDelete(JsonDeleteByIDView):
+    model = SetRequest
+    user_id_check = True

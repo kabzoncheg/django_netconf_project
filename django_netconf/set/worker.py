@@ -17,7 +17,8 @@ import pika
 from constance import config
 from jnpr.junos import Device as JunosDevice
 from jnpr.junos.utils.config import Config
-from jnpr.junos.exception import *
+from jnpr.junos.exception import CommitError
+from django.core.exceptions import ObjectDoesNotExist
 
 from django_netconf.common.setsettings import set_settings
 
@@ -35,18 +36,20 @@ class SetThreadWorker(Thread):
         self.lock = lock
         self.callback = callback
         self.logger = logger
-        self.file_name = None
+        file_name = None
 
     def run(self):
         while True:
             # Get IP-address and SET request  from the thread_queue and connect to Device
-            host, file_path, input_value, compare_flag, mq_chan, mq_prop = self.thread_queue.get()
+            host, file_path, config_id, compare_flag, mq_chan, mq_prop = self.thread_queue.get()
             usr = config.DEVICE_USER
             pwd = config.DEVICE_PWD
             timeout = config.CONN_TIMEOUT
             dev = JunosDevice(host=host, user=usr, password=pwd, auto_probe=timeout)
             error = None
             status_code = 0
+            file_name = None
+            result =''
             try:
                 self.logger.info('Connecting to Device {}'.format(host))
                 dev.open(gather_facts=False)
@@ -55,23 +58,38 @@ class SetThreadWorker(Thread):
                 error = err
                 status_code = 1
             else:
-                dev_request = None
-                self.logger.info('Executing request {} on Device {}'.format(input_value, host))
-                with Config(dev) as confdev:
-                    try:
-                        confdev.load()
-                        # CONTINUE to code here
-                    finally:
-                        self.logger.info('Closing connection with Device {}'.format(host))
-                        dev.disconnect()
+                try:
+                    config_file = Configurations.objects.get(id=config_id).config.read().decode('ascii')
+                except ObjectDoesNotExist:
+                    self.logger.error('Configurations object with id {} does not exist in database'.format(config_id))
+                    error = 'Configurations object with id {} was deleted'.format(config_id)
+                    status_code = 404
+                else:
+                    self.logger.info('Loading configuration {} on Device {}'.format(config_file, host))
+                    with Config(dev) as confdev:
+                        try:
+                            confdev.load(config_file)
+                            if compare_flag:
+                                result = confdev.pdiff()
+                            else:
+                                confdev.commit()
+                                result = 'COMMIT on Device {} SUCCESSFUL, committed ' \
+                                         'configuration: \n {}'.format(host, config_file)
+                        except CommitError as err:
+                            confdev.rollback()
+                            self.logger.error('Commit configuration {} FAILED on Device {}'.format(config_file, host))
+                            error = err
+                            status_code = 201
+                        finally:
+                            self.logger.info('Closing connection with Device {}'.format(host))
             finally:
                 if error:
-                    self.file_name = mq_prop.correlation_id + '-' + host + '.txt'
-                    with open(os.path.join(file_path, self.file_name), 'w+') as file:
+                    file_name = mq_prop.correlation_id + '-' + host + '.txt'
+                    with open(os.path.join(file_path, file_name), 'w+') as file:
                         file.write('\t======ERROR======\n')
                         file.write(str(error))
                 self.lock.acquire()
-                self.callback(host, status_code, mq_chan, mq_prop, self.file_name, error)
+                self.callback(host, status_code, mq_chan, mq_prop, file_name, error)
                 self.lock.release()
                 self.thread_queue.task_done()
 
@@ -89,6 +107,7 @@ def callback(host, status_code, mq_chan, mq_prop, file_name, err=None):
 
 # set Django settings
 set_settings()
+from set.models import Configurations
 
 # Set up connection to RabbitMQ server and queue declaration
 mq_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -118,16 +137,16 @@ def mq_method(channel, method, properties, body):
         # For example ipaddress.ip_address(host) could drop ValueError if ip-address is not correct
         # For future work
         data = json.loads(json_data)
-        host = data['get_request']['host']
-        input_value = data['get_request']['input_value']
-        file_path = data['get_request']['file_path']
-        compare_flag = data['get_request']['compare_flag']
+        host = data['set_request']['host']
+        config_id = data['set_request']['config_id']
+        file_path = data['set_request']['file_path']
+        compare_flag = data['set_request']['compare_flag']
         ipaddress.ip_address(host)
     except Exception as err:
         logger.error('Unable to parse data: {}, got Exception: {}'.format(json_data, err))
     else:
         logger.info('Queuing in the thread_queue GET request task {} for host {}'.format(data, host))
-        thread_queue.put((host, file_path, input_value, compare_flag, channel, properties))
+        thread_queue.put((host, file_path, config_id, compare_flag, channel, properties))
 
-mq_channel.basic_consume(mq_method, queue='get_requests', no_ack=True)
+mq_channel.basic_consume(mq_method, queue='set_requests', no_ack=True)
 mq_channel.start_consuming()

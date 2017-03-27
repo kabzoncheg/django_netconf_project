@@ -33,7 +33,6 @@ class GetThreadWorker(Thread):
         self.lock = lock
         self.callback = callback
         self.logger = logger
-        self.file_name = None
 
     def run(self):
         while True:
@@ -45,6 +44,7 @@ class GetThreadWorker(Thread):
             dev = JunosDevice(host=host, user=usr, password=pwd, db_flag=True, auto_probe=timeout)
             error = None
             status_code = 0
+            file_name = None
             try:
                 self.logger.info('Connecting to Device {}'.format(host))
                 dev.connect()
@@ -74,11 +74,11 @@ class GetThreadWorker(Thread):
                 else:
                     if isinstance(dev_request, etree._Element):
                         et = etree.ElementTree(dev_request)
-                        self.file_name = mq_prop.correlation_id + '-' + host + '.xml'
-                        et.write(os.path.join(file_path, self.file_name))
+                        file_name = mq_prop.correlation_id + '-' + host + '.xml'
+                        et.write(os.path.join(file_path, file_name))
                     else:
-                        self.file_name = mq_prop.correlation_id + '-' + host + '.txt'
-                        with open(os.path.join(file_path, self.file_name), 'w+') as file:
+                        file_name = mq_prop.correlation_id + '-' + host + '.txt'
+                        with open(os.path.join(file_path, file_name), 'w+') as file:
                             file.write('\t======{}======\n'.format(input_value))
                             file.write(dev_request)
                 finally:
@@ -86,12 +86,12 @@ class GetThreadWorker(Thread):
                     dev.disconnect()
             finally:
                 if error:
-                    self.file_name = mq_prop.correlation_id + '-' + host + '.txt'
-                    with open(os.path.join(file_path, self.file_name), 'w+') as file:
+                    file_name = mq_prop.correlation_id + '-' + host + '.txt'
+                    with open(os.path.join(file_path, file_name), 'w+') as file:
                         file.write('\t======ERROR======\n')
                         file.write(str(error))
                 self.lock.acquire()
-                self.callback(host, status_code, mq_chan, mq_prop, self.file_name, error)
+                self.callback(host, status_code, mq_chan, mq_prop, file_name, error)
                 self.lock.release()
                 self.thread_queue.task_done()
 

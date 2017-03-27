@@ -156,8 +156,8 @@ def multiple_set_request(set_requests):
         worker.daemon = True
         worker.start()
     for request in set_requests:
-        message_as_dict = {'set_request': {'host': request['host'], 'input_value': request['input_value'],
-                                           'file_path': request['file_path']}, 'compare_flag': request['compare_flag']}
+        message_as_dict = {'set_request': {'host': request['host'], 'config_id': request['config_id'],
+                                           'file_path': request['file_path'], 'compare_flag': request['compare_flag']}}
         message = json.dumps(message_as_dict, sort_keys=True)
         thread_queue.put(message)
     thread_queue.join()
@@ -185,9 +185,13 @@ if __name__ == '__main__':
 
     path = '/home/django/Programming_projects/django_netconf_project/sample_code/test/'
 
-    get_req_1 = {'host': host1, 'input_type': 'cli', 'input_value': inp_cli, 'additional_input_value': None,
+    get_req_1 = {'host': host1, 'input_type': 'cli', 'config_id': inp_cli, 'additional_config_id': None,
                  'file_path': path}
-    get_req_2 = {'host': host2, 'input_type': 'xml', 'input_value': inp_xml, 'additional_input_value': None,
+    get_req_2 = {'host': host2, 'input_type': 'xml', 'config_id': inp_xml, 'additional_config_id': None,
                  'file_path': path}
 
-    print(multiple_get_request([get_req_1, get_req_2]))
+    # print(multiple_get_request([get_req_1, get_req_2]))
+
+    set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': True}
+    set_req2 = {'host': host1, 'config_id': 54, 'file_path': path, 'compare_flag': True}
+    multiple_set_request([set_req2])

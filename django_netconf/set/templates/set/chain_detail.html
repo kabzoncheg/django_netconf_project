@@ -13,9 +13,6 @@
     <br>
     <div class="list-group">
         <a href="{% url 'set:chain_create'%}" class ="list-group-item list-group-item-success" >Create Chain</a>
-        {% comment %}
-        <a href="{% url 'set:chain_perform_get' chain.name %}" class ="list-group-item list-group-item-warning" >Perform chain request</a>
-        {% endcomment %}
     </div>
 
 {% endblock %}
@@ -24,7 +21,7 @@
 
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/common_style.css' %}" >
-    <script type="text/javascript" src="{% static "set/js/get_scripts.js" %}"></script>
+    <script type="text/javascript" src="{% static "set/js/set_scripts.js" %}"></script>
 
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
     <h4 align="center">Add additional request</h4>

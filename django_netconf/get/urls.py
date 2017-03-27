@@ -10,6 +10,6 @@ urlpatterns = [
     url(r'chains/create/$', views.chain_create, name='chain_create'),
     url(r'chains/name/(?P<name>.+)', views.chain_detail, name='chain_detail'),
     url(r'chains/perform/(?P<chain_name>.+)', views.multiple_get, name='chain_perform_get'),
-    url(r'json/delete-chain/$', views.json_chain_delete, name='json_delete_chain'),
-    url(r'json/delete-chain-request/$', views.json_chain_request_delete, name='json_delete_chain_request'),
+    url(r'json/delete-chain/$', views.JsonGetChainDelete.as_view(), name='json_delete_chain'),
+    url(r'json/delete-chain-request/$', views.JsonGetRequestDelete.as_view(), name='json_delete_chain_request'),
 ]

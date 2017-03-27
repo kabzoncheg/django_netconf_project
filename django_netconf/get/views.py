@@ -1,20 +1,18 @@
 import logging
 import os
-import json
 import zipfile
 from io import BytesIO
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
 
 from django_netconf.common.workertasks import multiple_get_request
+from django_netconf.common.views import JsonDeleteByIDView
 from django_netconf.config.settings import STATICFILES_DIRS
 
 from devices.models import Device
@@ -122,46 +120,15 @@ def chain_detail(request, name):
     return render(request, 'get/chain_detail.html', {'form': form, 'chain': chain, 'requests': chain_requests})
 
 
-@login_required
-def json_chain_delete(request):
-    # This view accepts AJAX request and performs Chain model entries delete
-    if request.is_ajax() and request.method == 'GET':
-        get = request.GET
-        result = {}
-        json_data = json.loads(get[u'chain_id_list'])
-        for element in json_data:
-            try:
-                instance = Chain.objects.get(id=element)
-                if request.user.id == instance.user_id:
-                    instance.delete()
-                    result[element] = True
-                else:
-                    result[element] = False
-            except ObjectDoesNotExist:
-                pass
-            except Exception:
-                result[element] = False
-        return JsonResponse(result)
+class JsonGetChainDelete(JsonDeleteByIDView):
+    model = Chain
+    json_array_name = 'chain_id_list'
+    user_id_check = True
 
 
-@login_required
-def json_chain_request_delete(request):
-    # This view accepts AJAX request and performs Request model entries delete
-    # TO DO: implement user check
-    if request.is_ajax() and request.method == 'GET':
-        get = request.GET
-        result = {}
-        json_data = json.loads(get[u'request_id_list'])
-        for element in json_data:
-            try:
-                instance = Request.objects.get(id=element)
-                instance.delete()
-                result[element] = True
-            except ObjectDoesNotExist:
-                pass
-            except Exception:
-                result[element] = False
-        return JsonResponse(result)
+class JsonGetRequestDelete(JsonDeleteByIDView):
+    model = Request
+    json_array_name = 'request_id_list'
 
 
 @login_required

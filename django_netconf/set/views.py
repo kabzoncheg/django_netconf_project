@@ -1,13 +1,11 @@
 import logging
 import os
-import json
 import zipfile
 from io import BytesIO
 from django.views import View
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
@@ -126,4 +124,4 @@ class JsonSetChainDelete(JsonDeleteByIDView):
 
 class JsonSetRequestDelete(JsonDeleteByIDView):
     model = SetRequest
-    user_id_check = True
+    json_array_name = 'request_id_list'

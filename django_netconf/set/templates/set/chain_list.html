@@ -26,6 +26,7 @@
                 <th>Description</th>
                 <th>Request counter</th>
                 <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=chain_delete()></th>
+            </tr>
         {% for chain in chain_list %}
             <tr class="chain_table_row" aria-label="{{ chain.id }}">
                 <td><a href="{% url 'set:chain_detail' chain.name %}">{{ chain.name }}</a></td>

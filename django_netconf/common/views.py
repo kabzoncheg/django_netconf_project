@@ -33,8 +33,6 @@ class JsonDeleteByIDView(View):
     user_id_check = False
 
     def get(self, request):
-        print('AJAX request biatch:', request.GET)
-        print(self.json_array_name)
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
         if not request.is_ajax():

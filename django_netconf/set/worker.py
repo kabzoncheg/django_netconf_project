@@ -18,6 +18,7 @@ from constance import config
 from jnpr.junos import Device as JunosDevice
 from jnpr.junos.utils.config import Config
 from jnpr.junos.exception import CommitError
+from jnpr.junos.exception import ConfigLoadError
 from django.core.exceptions import ObjectDoesNotExist
 
 from django_netconf.common.setsettings import set_settings
@@ -49,7 +50,7 @@ class SetThreadWorker(Thread):
             error = None
             status_code = 0
             file_name = None
-            result =''
+            result = ''
             try:
                 self.logger.info('Connecting to Device {}'.format(host))
                 dev.open(gather_facts=False)
@@ -65,29 +66,41 @@ class SetThreadWorker(Thread):
                     error = 'Configurations object with id {} was deleted'.format(config_id)
                     status_code = 404
                 else:
-                    self.logger.info('Loading configuration {} on Device {}'.format(config_file, host))
+                    self.logger.info('Loading configuration\n {}\n on Device {}'.format(config_file, host))
                     with Config(dev) as confdev:
                         try:
                             confdev.load(config_file)
                             if compare_flag:
-                                result = confdev.pdiff()
+                                result = 'DIFFERENCE with Device {} configuration:\n'.format(host, confdev.diff())
+                                confdev.rollback()
                             else:
                                 confdev.commit()
-                                result = 'COMMIT on Device {} SUCCESSFUL, committed ' \
-                                         'configuration: \n {}'.format(host, config_file)
+                                result = 'COMMIT on Device {} SUCCESSFUL'.format(host)
                         except CommitError as err:
                             confdev.rollback()
-                            self.logger.error('Commit configuration {} FAILED on Device {}'.format(config_file, host))
+                            self.logger.error('Commit configuration\n {}\n FAILED on Device {}'.format(config_file, host))
                             error = err
                             status_code = 201
-                        finally:
-                            self.logger.info('Closing connection with Device {}'.format(host))
+                        except ConfigLoadError as err:
+                            confdev.rollback()
+                            self.logger.error('Load configuration\n {}\n FAILED on Device {}'.format(config_file, host))
+                            error = err
+                            status_code = 202
+                finally:
+                    self.logger.info('Closing connection with Device {}'.format(host))
+                    dev.close()
             finally:
-                if error:
-                    file_name = mq_prop.correlation_id + '-' + host + '.txt'
-                    with open(os.path.join(file_path, file_name), 'w+') as file:
-                        file.write('\t======ERROR======\n')
+                file_name = mq_prop.correlation_id + '-' + host + '.txt'
+                with open(os.path.join(file_path, file_name), 'w+') as file:
+                    if error:
+                        file.write('==========ERROR==========\n')
                         file.write(str(error))
+                    elif result:
+                        file.write('=========SUCCESS=========\n')
+                        file.write('======CONFIGURATION======\n')
+                        file.write(config_file)
+                        file.write('\n========RESULT=========\n')
+                        file.write(str(result))
                 self.lock.acquire()
                 self.callback(host, status_code, mq_chan, mq_prop, file_name, error)
                 self.lock.release()
@@ -103,7 +116,7 @@ def callback(host, status_code, mq_chan, mq_prop, file_name, err=None):
     if not err:
         logger.info('SET Request successfull for host {}'.format(host))
     else:
-        logger.error('SET Request to host {} FAILED, error occured: {}'.format(host, err))
+        logger.error('SET Request to host {} FAILED, error occurred: {}'.format(host, err))
 
 # set Django settings
 set_settings()

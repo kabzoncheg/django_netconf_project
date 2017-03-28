@@ -192,6 +192,7 @@ if __name__ == '__main__':
 
     # print(multiple_get_request([get_req_1, get_req_2]))
 
-    set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': True}
+    set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': False}
     set_req2 = {'host': host1, 'config_id': 54, 'file_path': path, 'compare_flag': True}
+
     multiple_set_request([set_req2])

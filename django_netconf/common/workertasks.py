@@ -190,9 +190,9 @@ if __name__ == '__main__':
     get_req_2 = {'host': host2, 'input_type': 'xml', 'config_id': inp_xml, 'additional_config_id': None,
                  'file_path': path}
 
-    # print(multiple_get_request([get_req_1, get_req_2]))
+    print(multiple_get_request([get_req_1, get_req_2]))
 
-    set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': False}
-    set_req2 = {'host': host1, 'config_id': 54, 'file_path': path, 'compare_flag': True}
+    set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': True}
+    set_req2 = {'host': host1, 'config_id': 54, 'file_path': path, 'compare_flag': False}
 
-    multiple_set_request([set_req2])
+    multiple_set_request([set_req1])

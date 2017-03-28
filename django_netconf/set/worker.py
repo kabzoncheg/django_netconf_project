@@ -71,21 +71,27 @@ class SetThreadWorker(Thread):
                         try:
                             confdev.load(config_file)
                             if compare_flag:
-                                result = 'DIFFERENCE with Device {} configuration:\n'.format(host, confdev.diff())
+                                result = confdev.diff()
                                 confdev.rollback()
                             else:
                                 confdev.commit()
                                 result = 'COMMIT on Device {} SUCCESSFUL'.format(host)
-                        except CommitError as err:
-                            confdev.rollback()
-                            self.logger.error('Commit configuration\n {}\n FAILED on Device {}'.format(config_file, host))
-                            error = err
-                            status_code = 201
                         except ConfigLoadError as err:
                             confdev.rollback()
                             self.logger.error('Load configuration\n {}\n FAILED on Device {}'.format(config_file, host))
                             error = err
+                            status_code = 201
+                        except CommitError as err:
+                            confdev.rollback()
+                            self.logger.error('Commit configuration\n {}\n FAILED on Device {}'.format(config_file, host))
+                            error = err
                             status_code = 202
+                        except Exception as err:
+                            confdev.rollback()
+                            self.logger.critical('Unknown error {}'. format(err))
+                            error = err
+                            status_code = 200
+
                 finally:
                     self.logger.info('Closing connection with Device {}'.format(host))
                     dev.close()

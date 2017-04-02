@@ -1,4 +1,6 @@
 # TO DO: consider implementing thread limit
+import os
+import zipfile
 import json
 import uuid
 import logging
@@ -6,8 +8,11 @@ from time import time
 from queue import Queue
 from threading import Thread
 from threading import Lock
+from io import BytesIO
 
 import pika
+
+from django_netconf.config.settings import STATICFILES_DIRS
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -167,6 +172,33 @@ def multiple_set_request(set_requests):
         return None
 
 
+def send_worker_request_and_zip_result(task_list, worker_name, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
+    allowed_worker_names = {'GET': multiple_get_request, 'SET': multiple_set_request}
+    if worker_name not in allowed_worker_names:
+        raise AttributeError('Only {} worker_names are allowed! Got {}'.format(allowed_worker_names, worker_name))
+    worker_response = allowed_worker_names[worker_name](task_list)
+    if not worker_response:
+        return None
+    in_memory = BytesIO()
+    zip_archive = zipfile.ZipFile(in_memory, mode='w')
+    for response in worker_response:
+        file_name = response['file_name']
+        file_path = os.path.join(path, file_name)
+        try:
+            with open(file_path) as f:
+                file_content = f.read()
+            logger.info('Writing file at {} to in memory archive:'.format(file_path))
+            zip_archive.writestr(file_name, file_content)
+        except RuntimeError:
+            logger.info('Got ERROR while writing file at {} to in memory archive:'.format(file_path))
+            zip_archive.close()
+        finally:
+            logger.info('removing file {}:'.format(file_path))
+            os.remove(file_path)
+    zip_archive.close()
+    return in_memory
+
+
 if __name__ == '__main__':
     # While normal tests not implemented:
     host1 = '10.0.1.1'
@@ -185,12 +217,12 @@ if __name__ == '__main__':
 
     path = '/home/django/Programming_projects/django_netconf_project/sample_code/test/'
 
-    get_req_1 = {'host': host1, 'input_type': 'cli', 'config_id': inp_cli, 'additional_config_id': None,
-                 'file_path': path}
-    get_req_2 = {'host': host2, 'input_type': 'xml', 'config_id': inp_xml, 'additional_config_id': None,
-                 'file_path': path}
+    # get_req_1 = {'host': host1, 'input_type': 'cli', 'config_id': inp_cli, 'additional_config_id': None,
+    #              'file_path': path}
+    # get_req_2 = {'host': host2, 'input_type': 'xml', 'config_id': inp_xml, 'additional_config_id': None,
+    #              'file_path': path}
 
-    print(multiple_get_request([get_req_1, get_req_2]))
+    # print(multiple_get_request([get_req_1, get_req_2]))
 
     set_req1 = {'host': host1, 'config_id': 52, 'file_path': path, 'compare_flag': True}
     set_req2 = {'host': host1, 'config_id': 54, 'file_path': path, 'compare_flag': False}

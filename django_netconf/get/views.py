@@ -1,7 +1,5 @@
 import logging
 import os
-import zipfile
-from io import BytesIO
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -11,7 +9,7 @@ from django.db import DataError
 from django.shortcuts import reverse
 from django.shortcuts import get_object_or_404
 
-from django_netconf.common.workertasks import multiple_get_request
+from django_netconf.common.workertasks import send_worker_request_and_zip_result
 from django_netconf.common.views import JsonDeleteByIDView
 from django_netconf.config.settings import STATICFILES_DIRS
 
@@ -24,30 +22,6 @@ from .models import Request
 
 
 logger = logging.getLogger(__name__)
-
-
-def send_worker_request_and_zip_result(task_list, path=os.path.join(STATICFILES_DIRS[0], 'temp')):
-    worker_response = multiple_get_request(task_list)
-    if not worker_response:
-        return None
-    in_memory = BytesIO()
-    zip_archive = zipfile.ZipFile(in_memory, mode='w')
-    for response in worker_response:
-        file_name = response['file_name']
-        file_path = os.path.join(path, file_name)
-        try:
-            with open(file_path) as f:
-                file_content = f.read()
-            logger.info('Writing file at {} to in memory archive:'.format(file_path))
-            zip_archive.writestr(file_name, file_content)
-        except RuntimeError:
-            logger.info('Got ERROR while writing file at {} to in memory archive:'.format(file_path))
-            zip_archive.close()
-        finally:
-            logger.info('removing file {}:'.format(file_path))
-            os.remove(file_path)
-    zip_archive.close()
-    return in_memory
 
 
 @login_required
@@ -141,7 +115,7 @@ def multiple_get(request, chain_name):
         worker_request = {'host': ch_req.device_id, 'input_type': ch_req.input_type, 'input_value': ch_req.input_value,
                    'additional_input_value': ch_req.additional_input_value, 'file_path': path}
         worker_request_list.append(worker_request)
-    in_memory_zip = send_worker_request_and_zip_result(worker_request_list)
+    in_memory_zip = send_worker_request_and_zip_result(worker_request_list, worker_name='GET')
     if in_memory_zip is None:
         return HttpResponse(status_code=200)
     in_memory_zip.seek(0)

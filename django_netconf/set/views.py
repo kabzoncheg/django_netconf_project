@@ -1,8 +1,6 @@
 import logging
 import os
-import zipfile
-from io import BytesIO
-from django.views import View
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -10,10 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.db import DataError
 from django.shortcuts import reverse
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 
-from django_netconf.common.workertasks import multiple_get_request
+from django_netconf.common.workertasks import send_worker_request_and_zip_result
 from django_netconf.common.views import JsonDeleteByIDView
 from django_netconf.config.settings import STATICFILES_DIRS
 
@@ -125,3 +122,23 @@ class JsonSetChainDelete(JsonDeleteByIDView):
 class JsonSetRequestDelete(JsonDeleteByIDView):
     model = SetRequest
     json_array_name = 'request_id_list'
+
+
+@login_required
+def multiple_set(request, chain_name, compare_flag):
+    chain = get_object_or_404(SetChain, name=chain_name, user=request.user)
+    chain_requests = chain.requests.all()
+    worker_request_list = []
+    path = os.path.join(STATICFILES_DIRS[0], 'temp')
+    for ch_req in chain_requests:
+        worker_request = {'host': ch_req.device_id, 'config_id': ch_req.config_id,
+                          'file_path': path, 'compare_flag': compare_flag}
+        worker_request_list.append(worker_request)
+    in_memory_zip = send_worker_request_and_zip_result(worker_request_list, worker_name='SET')
+    if in_memory_zip is None:
+        return HttpResponse(status_code=200)
+    in_memory_zip.seek(0)
+    response = HttpResponse(content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename=get_response.zip'
+    response.write(in_memory_zip.read())
+    return response

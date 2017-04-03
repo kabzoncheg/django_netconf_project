@@ -37,7 +37,7 @@ def single_get(request):
             path = os.path.join(STATICFILES_DIRS[0], 'temp')
             request = {'host': ip_addr, 'input_type': input_type, 'input_value': input_value,
                        'additional_input_value': additional_input_value, 'file_path': path}
-            in_memory_zip = send_worker_request_and_zip_result([request])
+            in_memory_zip = send_worker_request_and_zip_result([request], worker_name='GET')
             if in_memory_zip is None:
                 return HttpResponse(status_code=200)
             in_memory_zip.seek(0)

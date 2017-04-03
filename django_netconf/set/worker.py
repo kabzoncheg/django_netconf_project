@@ -71,10 +71,12 @@ class SetThreadWorker(Thread):
                         try:
                             confdev.load(config_file)
                             if compare_flag:
+                                self.logger.info('COMPARE configuration\n {}\n on Device {}'.format(config_file, host))
                                 result = confdev.diff()
                                 confdev.rollback()
                             else:
                                 confdev.commit()
+                                self.logger.info('COMMIT configuration\n {}\n on Device {}'.format(config_file, host))
                                 result = 'COMMIT on Device {} SUCCESSFUL'.format(host)
                         except ConfigLoadError as err:
                             confdev.rollback()
@@ -83,7 +85,8 @@ class SetThreadWorker(Thread):
                             status_code = 201
                         except CommitError as err:
                             confdev.rollback()
-                            self.logger.error('Commit configuration\n {}\n FAILED on Device {}'.format(config_file, host))
+                            self.logger.error('Commit configuration\n {}\n FAILED '
+                                              'on Device {}'.format(config_file, host))
                             error = err
                             status_code = 202
                         except Exception as err:

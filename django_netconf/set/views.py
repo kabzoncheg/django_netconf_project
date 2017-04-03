@@ -132,7 +132,7 @@ def multiple_set(request, chain_name, compare_flag):
     path = os.path.join(STATICFILES_DIRS[0], 'temp')
     for ch_req in chain_requests:
         worker_request = {'host': ch_req.device_id, 'config_id': ch_req.config_id,
-                          'file_path': path, 'compare_flag': compare_flag}
+                          'file_path': path, 'compare_flag': int(compare_flag)}
         worker_request_list.append(worker_request)
     in_memory_zip = send_worker_request_and_zip_result(worker_request_list, worker_name='SET')
     if in_memory_zip is None:

@@ -216,8 +216,8 @@ class JunosDevice:
         """
         model = 'Device'
         table = []
-        self._facts['last_checked_status'] = True
-        table.append(self._facts)
+        self.facts['last_checked_status'] = True
+        table.append(self.facts)
         return table, model
 
     @_CheckModel
@@ -278,7 +278,7 @@ class JunosDevice:
         dev.open()
         dev.timeout = self.timeout
         self._connection = dev
-        self._facts = dev.facts
+        self.facts = dev.facts
         return self
 
     def disconnect(self):

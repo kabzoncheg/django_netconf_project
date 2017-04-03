@@ -39,7 +39,7 @@ function request_delete() {
         request_id_array.push(request_id);
     })
     var request_id_string = JSON.stringify(request_id_array);
-    $.getJSON('/get/json/delete-chain-request/', { request_id_list: request_id_string }, function(json){
+    $.getJSON('/set/json/delete-request/', { request_id_list: request_id_string }, function(json){
         for (var elt in json) {
             var single_request_status = json[elt];
             if (single_request_status == true) {

@@ -17,7 +17,7 @@
 {% endblock %}
 {% block content %}
 
-    <div class="content_detail well" style="max-width: 500px; margin: auto;">
+    <div class="content_detail_not_default well" style="max-width: 500px; margin: auto;">
         <h4 align="center">{{ device_obj.ip_address }}</h4>
         <div class="device_description_container" id="test">
             <p><b>Description: </b>{{ device_obj.description }}</p>
@@ -41,6 +41,8 @@
 
     {% load static %}
     <script type="text/javascript" src="{% static "devices/js/device_update.js" %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/common_style.css' %}">
+
 {% endblock %}
 </html>
 

@@ -1,14 +1,4 @@
-h1 a {
-    color: #2EC745;
-    font-family: 'Nova Mono' ;
-}
-
-h2 a {
-    color: #2EC745;
-    font-family: 'Nova Mono' ;
-}
-
-h3 a {
+h1, h2, h3, h4 a {
     color: #2EC745;
     font-family: 'Nova Mono' ;
 }

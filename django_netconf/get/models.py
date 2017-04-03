@@ -18,6 +18,7 @@ class Request(models.Model):
     input_value = models.CharField('Actual request data', max_length=1000)
     additional_input_value = models.CharField('Additional request data, only for rpc request',
                                               max_length=200, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class Chain(models.Model):

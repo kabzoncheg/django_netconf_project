@@ -27,6 +27,7 @@ class Configurations(models.Model):
 class SetRequest(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     config = models.ForeignKey(Configurations, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class SetChain(models.Model):

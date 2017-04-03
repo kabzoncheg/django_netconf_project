@@ -87,7 +87,7 @@ def chain_detail(request, name):
             additional_input_value = form.cleaned_data['additional_input_value']
             device = Device.objects.get(ip_address=ip_addr)
             req = Request(device=device, input_type=input_type, input_value=input_value,
-                          additional_input_value=additional_input_value)
+                          additional_input_value=additional_input_value, user=request.user)
             req.save()
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('get:chain_detail', kwargs={'name': name}))
@@ -103,6 +103,7 @@ class JsonGetChainDelete(JsonDeleteByIDView):
 class JsonGetRequestDelete(JsonDeleteByIDView):
     model = Request
     json_array_name = 'request_id_list'
+    user_id_check = True
 
 
 @login_required

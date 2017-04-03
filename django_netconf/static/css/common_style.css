@@ -5,3 +5,8 @@
 .form_base{
     width: 400px;
 }
+
+h3, h4 {
+    color: #2EC745;
+    font-family: 'Nova Mono' ;
+}

@@ -61,7 +61,7 @@ def configurations_list(request):
 def configurations_detail(request, config_id):
     instance = Configurations.objects.get(id=config_id, user_id=request.user.id)
     file = instance.config.read()
-    return render(request, 'set/configurations_detail.html', {'config_file': file})
+    return render(request, 'set/configurations_detail.html', {'config_file': file, 'file_name':instance.name})
 
 
 class JsonConfigurationsDelete(JsonDeleteByIDView):
@@ -107,7 +107,7 @@ def chain_detail(request, name):
             config_id = form.cleaned_data['config'].id
             device = Device.objects.get(ip_address=ip_addr)
             config = Configurations.objects.get(id=config_id)
-            req = SetRequest(device=device, config=config)
+            req = SetRequest(device=device, config=config, user=request.user)
             req.save()
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('set:chain_detail', kwargs={'name': name}))
@@ -122,6 +122,7 @@ class JsonSetChainDelete(JsonDeleteByIDView):
 class JsonSetRequestDelete(JsonDeleteByIDView):
     model = SetRequest
     json_array_name = 'request_id_list'
+    user_id_check = True
 
 
 @login_required

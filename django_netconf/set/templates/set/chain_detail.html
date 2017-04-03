@@ -22,9 +22,10 @@
 {% block content %}
 
     {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/common_style.css' %}" >
+    <link rel="stylesheet" type="text/css" href="{% static 'css/common_style.css' %}">
     <script type="text/javascript" src="{% static "set/js/set_scripts.js" %}"></script>
 
+    <h3 align="center">Chain: {{ chain.name }}</h3>
     <div class="content_detail well" style="max-width: 500px; margin: auto;">
     <h4 align="center">Add additional request</h4>
         <form action="" method="post">

@@ -108,8 +108,11 @@ class SetThreadWorker(Thread):
                         file.write('=========SUCCESS=========\n')
                         file.write('======CONFIGURATION======\n')
                         file.write(config_file)
-                        file.write('\n========RESULT=========\n')
+                        file.write('\n=========RESULT==========\n')
                         file.write(str(result))
+                    else:
+                        file.write('=========SUCCESS=========\n')
+                        file.write('======NO DIFFERENCE======')
                 self.lock.acquire()
                 self.callback(host, status_code, mq_chan, mq_prop, file_name, error)
                 self.lock.release()

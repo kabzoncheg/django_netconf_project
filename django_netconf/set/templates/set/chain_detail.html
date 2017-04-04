@@ -44,8 +44,8 @@
                     <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=request_delete()></th>
                     {% for request in requests %}
                             <tr class="request_table_row" aria-label="{{ request.id }}">
-                                <td>{{ request.device_id }}</td>
-                                <td>{{ request.config.name }}</td>
+                                <td><a href="{% url 'devices:detail' request.device_id %}">{{ request.device_id }}</a></td>
+                                <td><a href="{% url 'set:configurations_detail' request.config.id %}">{{ request.config.name  }}</a></td>
                                 <td><input type="checkbox" value="" aria-label="{{ request.id }}"></td>
                             </tr>
         {% endfor %}

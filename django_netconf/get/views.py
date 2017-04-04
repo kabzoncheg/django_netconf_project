@@ -17,8 +17,8 @@ from devices.models import Device
 
 from .forms import SingleGETRequestForm
 from .forms import ChainCreateForm
-from .models import Chain
-from .models import Request
+from .models import GetChain
+from .models import GetRequest
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def single_get(request):
 @login_required
 def chain_list(request):
     try:
-        chain_objects_list = Chain.objects.filter(user=request.user).order_by('name')
+        chain_objects_list = GetChain.objects.filter(user=request.user).order_by('name')
     except DataError:
         chain_objects_list = []
     return render(request, 'get/chain_list.html', {'chain_list': chain_objects_list})
@@ -67,7 +67,7 @@ def chain_create(request):
             chain_name = form.cleaned_data['name']
             chain_description = form.cleaned_data['description']
             chain_user = request.user
-            new_chain = Chain(name=chain_name, description=chain_description, user=chain_user)
+            new_chain = GetChain(name=chain_name, description=chain_description, user=chain_user)
             new_chain.save()
             return HttpResponseRedirect(reverse('get:chain_list'))
     return render(request, 'get/chain_create.html', {'form': form})
@@ -75,7 +75,7 @@ def chain_create(request):
 
 @login_required
 def chain_detail(request, name):
-    chain = get_object_or_404(Chain, name=name, user=request.user)
+    chain = get_object_or_404(GetChain, name=name, user=request.user)
     chain_requests = chain.requests.all()
     form = SingleGETRequestForm()
     if request.method == 'POST':
@@ -86,8 +86,8 @@ def chain_detail(request, name):
             input_value = form.cleaned_data['input_value']
             additional_input_value = form.cleaned_data['additional_input_value']
             device = Device.objects.get(ip_address=ip_addr)
-            req = Request(device=device, input_type=input_type, input_value=input_value,
-                          additional_input_value=additional_input_value, user=request.user)
+            req = GetRequest(device=device, input_type=input_type, input_value=input_value,
+                             additional_input_value=additional_input_value, user=request.user)
             req.save()
             chain.requests.add(req)
             return HttpResponseRedirect(reverse('get:chain_detail', kwargs={'name': name}))
@@ -95,20 +95,20 @@ def chain_detail(request, name):
 
 
 class JsonGetChainDelete(JsonDeleteByIDView):
-    model = Chain
+    model = GetChain
     json_array_name = 'chain_id_list'
     user_id_check = True
 
 
 class JsonGetRequestDelete(JsonDeleteByIDView):
-    model = Request
+    model = GetRequest
     json_array_name = 'request_id_list'
     user_id_check = True
 
 
 @login_required
 def multiple_get(request, chain_name):
-    chain = get_object_or_404(Chain, name=chain_name, user=request.user)
+    chain = get_object_or_404(GetChain, name=chain_name, user=request.user)
     chain_requests = chain.requests.all()
     worker_request_list = []
     path = os.path.join(STATICFILES_DIRS[0], 'temp')

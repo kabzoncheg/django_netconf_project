@@ -11,7 +11,7 @@ INPUT_TYPE = (
 )
 
 
-class Request(models.Model):
+class GetRequest(models.Model):
     # Rename to GetRequest
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     input_type = models.CharField('Request type', max_length=3, choices=INPUT_TYPE)
@@ -21,9 +21,9 @@ class Request(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
-class Chain(models.Model):
+class GetChain(models.Model):
     # Rename to GetChain
     name = models.CharField('GET chain name:', max_length=100)
     description = models.CharField('GET chain description', max_length=200, default=None)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    requests = models.ManyToManyField(Request)
+    requests = models.ManyToManyField(GetRequest)

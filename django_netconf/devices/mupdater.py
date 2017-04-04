@@ -68,7 +68,7 @@ class ModelUpdater:
         model_inst = self.ModelClass.objects.get_or_create(ip_address=self.host)[0]
         up_time = []
         for key in entry.keys():
-            if key.startswith('RE'):
+            if key.startswith('RE0'):
                 up_time.append(entry[key]['up_time'])
         if up_time:
             setattr(model_inst, 'up_time', max(up_time))
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         int_p = device.get_phy_interface_list()
         device.disconnect()
 
-        print(facts)
+        print('Facts:', facts)
         print('Instance:', instance)
         print('Instance RIB:', inst_rib)
         print('ARP Table for {}: {}'.format(hostn, arp_t))

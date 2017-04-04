@@ -44,7 +44,7 @@
                     <th><input type="button" value="Delete" class="btn btn-danger btn-sm" onclick=request_delete()></th>
                     {% for request in requests %}
                             <tr class="request_table_row" aria-label="{{ request.id }}">
-                                <td>{{ request.device_id }}</td>
+                                <td><a href="{% url 'devices:detail' request.device_id %}">{{ request.device_id }}</a></td>
                                 <td>{{ request.input_type }}</td>
                                 <td>{{ request.input_value }}</td>
                                 <td>{{ request.additional_input_value}}</td>

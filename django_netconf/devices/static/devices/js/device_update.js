@@ -33,7 +33,7 @@ function device_update(element) {
 
 function device_update_detail(element) {
     var ip_address = element.attr('aria-label');
-    var content = $('.content_detail');
+    var content = $('.content_detail_not_default');
     var old_content = content.html();
     content.html(function () {
         return ""+

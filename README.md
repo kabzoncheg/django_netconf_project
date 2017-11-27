@@ -1,3 +1,5 @@
+This NMS is built for educational purposes. Beware, bunch of shit-code for refactoring!!!
+
 Network Management System (NMS) for Juniper Networks equipment.
 Based on Django and junos-eznc.
 
